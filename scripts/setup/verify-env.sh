@@ -65,10 +65,11 @@ echo
 echo "Result: $ok checks passed, $fail missing"
 echo
 echo "Next on your PC:"
-echo "  1) Install Unity Hub + Unity 6000.0.50f1 (LTS) with Windows Build Support"
+echo "  1) Use Unity Hub with installed Editor 2022.3.62f3c1 LTS"
 echo "  2) Install Blender 4.2 LTS"
 echo "  3) Unity Hub -> Open -> select this repo folder"
-echo "  4) Open Assets/Scenes/Level_01.unity and press Play after greyboxing"
+echo "  4) When prompted, open with 2022.3.62f3c1"
+echo "  5) Open Assets/Scenes/Level_01.unity and start greyboxing"
 echo "See docs/开发环境.md for details."
 
 exit "$fail"
