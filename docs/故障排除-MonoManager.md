@@ -16,20 +16,19 @@
 4. Unity Hub → 用 **2022.3.62f3c1** 重新 Open 该文件夹  
 5. 第一次会重新导入，多等几分钟
 
-## 方案 B（A 还不行就用这个，最稳）
+## 方案 B（推荐：你已新建 `D:\MyProject\3dgame2`）
 
-手写工程设置偶发不兼容时，用 Hub 新建官方工程再拷资源：
+1. 确认 `D:\MyProject\3dgame2` 是 Hub 新建的 **3D (URP)** 项目，且能正常打开  
+2. 先把本仓库拉到任意目录，例如 `D:\MyProject\3Dgame-repo`  
+3. 在仓库里执行（会复制脚本/场景到 3dgame2，并推 GitHub）：
 
-1. Unity Hub → **新建项目**
-2. 模板选 **3D (URP)**
-3. 编辑器选 **2022.3.62f3c1**
-4. 项目名例如 `3DgameLocal`，创建
-5. 关掉 Unity 后，把仓库里的这些拷进新项目（覆盖同名即可）：
-   - `Assets/Scripts`
-   - `Assets/Scenes`
-   - `Assets/Art`
-   - `Assets/Input`
-   - `ArtSource`（可选）
-6. 再用 Hub 打开 `3DgameLocal`
+```powershell
+cd D:\MyProject\3Dgame-repo
+git checkout cursor/unity-blender-requirements-55cc
+git pull
+powershell -ExecutionPolicy Bypass -File scripts\setup\sync-from-repo-to-3dgame2.ps1 -Dest "D:\MyProject\3dgame2"
+```
 
-脚本与场景就能用了。
+4. 之后用 Hub 只打开 **`D:\MyProject\3dgame2`**
+
+> 云端 Agent 访问不到你电脑的 `D:\`，所以复制必须在你本机跑上面的脚本。
