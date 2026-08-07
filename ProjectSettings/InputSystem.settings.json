@@ -1,0 +1,9 @@
+{
+    "m_SerializeVersion": 3,
+    "m_ActiveInputHandler": 1,
+    "m_ActionAsset": {
+        "m_FileID": -944628639613478452,
+        "m_Path": "Assets/Input/PlayerControls.inputactions",
+        "m_Guid": "d4e5f60718293a4b5c6d7e8f901a2b3c"
+    }
+}
