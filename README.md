@@ -4,13 +4,12 @@
 
 ## 快速开始（本机）
 
-1. 安装 **Unity Hub**，再安装 Editor **`6000.0.50f1`**（勾选 Windows Build Support + IDE 支持）
+1. 安装 **Unity Hub**，使用已安装的 Editor **`2022.3.62f3c1` LTS**（或同系列 2022.3 LTS）
 2. 安装 **Blender 4.2 LTS**
-3. 克隆本仓库后执行：
-   - Windows：`powershell -ExecutionPolicy Bypass -File scripts/setup/setup-windows.ps1`
-   - Linux：`bash scripts/setup/verify-env.sh`
+3. 拉取分支 `cursor/unity-blender-requirements-55cc`
 4. Unity Hub → **Open** → 选择本仓库根目录
-5. 打开 `Assets/Scenes/Level_01.unity` 开始灰盒
+5. 若提示版本，选 **使用 2022.3.62f3c1 打开**
+6. 打开 `Assets/Scenes/Level_01.unity` 开始灰盒
 
 首次打开若提示 Input System / URP，按编辑器提示重启或创建 URP Asset 即可。
 
@@ -24,7 +23,7 @@
 
 | 用途 | 软件 |
 |------|------|
-| 游戏引擎 | Unity **6000.0.50f1** + URP + C# |
+| 游戏引擎 | Unity **2022.3.62f3c1 LTS** + URP + C# |
 | 建模 | Blender **4.2 LTS** |
 | 版本管理 | Git + Git LFS |
 

@@ -43,12 +43,16 @@ if ($hub) {
     Write-Host "[MISSING] Unity Hub -> https://unity.com/download" -ForegroundColor Yellow
 }
 
-$editorHint = "C:\Program Files\Unity\Hub\Editor\6000.0.50f1\Editor\Unity.exe"
-if (Test-Path $editorHint) {
-    Write-Host "[OK] Unity Editor 6000.0.50f1" -ForegroundColor Green
+$editorHints = @(
+    "C:\Program Files\Unity\Hub\Editor\2022.3.62f3c1\Editor\Unity.exe",
+    "C:\Program Files\Unity\Hub\Editor\2022.3.62f3\Editor\Unity.exe"
+)
+$editor = $editorHints | Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($editor) {
+    Write-Host "[OK] Unity Editor 2022.3.62 ($editor)" -ForegroundColor Green
     $ok++
 } else {
-    Write-Host "[MISSING] Unity Editor 6000.0.50f1 (install via Hub, match ProjectSettings/ProjectVersion.txt)" -ForegroundColor Yellow
+    Write-Host "[MISSING] Unity Editor 2022.3.62f3c1 (use the LTS already in Hub)" -ForegroundColor Yellow
 }
 
 if (Test-Path "ProjectSettings\ProjectVersion.txt") {
@@ -59,14 +63,13 @@ if (Test-Path "ProjectSettings\ProjectVersion.txt") {
 Write-Host ""
 Write-Host "Manual install checklist:" -ForegroundColor Cyan
 Write-Host " 1. Install Unity Hub + login (Personal license OK)"
-Write-Host " 2. Install Editor version 6000.0.50f1 with modules:"
-Write-Host "      - Microsoft Visual Studio Community / IDE support"
-Write-Host "      - Windows Build Support (IL2CPP)"
+Write-Host " 2. Use installed Editor 2022.3.62f3c1 LTS (no need for Unity 6)"
 Write-Host " 3. Install Blender 4.2 LTS"
 Write-Host " 4. In Unity Hub: Open -> select this repo folder ($Root)"
-Write-Host " 5. Let Unity import packages (URP / Input System / Cinemachine / ProBuilder)"
-Write-Host " 6. If prompted by Input System, restart Editor"
-Write-Host " 7. Open Assets/Scenes/Level_01.unity"
+Write-Host " 5. When asked for version, choose 2022.3.62f3c1"
+Write-Host " 6. Let Unity import packages (URP / Input System / Cinemachine / ProBuilder)"
+Write-Host " 7. If prompted by Input System, restart Editor"
+Write-Host " 8. Open Assets/Scenes/Level_01.unity"
 Write-Host ""
 Write-Host "Git LFS tip: git lfs install"
 Write-Host "Docs: docs/开发环境.md"
