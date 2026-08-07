@@ -11,7 +11,16 @@
 5. 若提示版本，选 **使用 2022.3.62f3c1 打开**
 6. 打开 `Assets/Scenes/Level_01.unity` 开始灰盒
 
-首次打开若提示 Input System / URP，按编辑器提示重启或创建 URP Asset 即可。
+## 本机推荐路径（MonoManager 无法打开旧骨架时）
+
+若你已用 Hub 新建 URP 项目在 `D:\MyProject\3dgame2`：
+
+```powershell
+# 先 clone/pull 本仓库，再执行：
+powershell -ExecutionPolicy Bypass -File scripts\setup\sync-from-repo-to-3dgame2.ps1 -Dest "D:\MyProject\3dgame2"
+```
+
+之后只用 Hub 打开 `D:\MyProject\3dgame2`。
 
 ## 文档
 
