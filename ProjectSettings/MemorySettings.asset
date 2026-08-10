@@ -1,0 +1,14 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!13 &1
+MemorySettings:
+  m_ObjectHideFlags: 0
+  m_EditorMemorySettings:
+    m_BlockSize: -1
+    m_MainAllocatorBlockSize: -1
+    m_ThreadAllocatorBlockSize: -1
+    m_GfxAllocatorBlockSize: -1
+    m_CacheAllocatorBlockSize: -1
+    m_TypetreeAllocatorBlockSize: -1
+    m_BucketAllocatorBlockSize: -1
+  m_PlatformMemorySettings: {}
