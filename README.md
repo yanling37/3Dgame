@@ -1,6 +1,15 @@
-# 3Dgame
+# 3Dgame / Divine World Simulation
 
-用 **Unity** 做主开发、**Blender** 做建模的 3D 游戏尝试项目。
+用 **Unity** 做主开发、**Blender** 做建模的动态文明模拟项目。
+
+## 设计文档（优先阅读）
+
+- [**Game Design Document**](docs/GameDesignDocument.md) — 《Divine World Simulation》游戏设计需求说明书（v1.0）
+- [开发环境](docs/开发环境.md)
+- [故障排除（MonoManager）](docs/故障排除-MonoManager.md)
+- [早期工程需求（已过时，仅作技术骨架参考）](docs/需求文档.md)
+
+> 后续将另拆《程序设计文档》《算法设计文档》，与 GDD 分离。
 
 ## 快速开始（本机）
 
@@ -9,7 +18,7 @@
 3. 拉取分支 `cursor/unity-blender-requirements-55cc`
 4. Unity Hub → **Open** → 选择本仓库根目录
 5. 若提示版本，选 **使用 2022.3.62f3c1 打开**
-6. 打开 `Assets/Scenes/Level_01.unity` 开始灰盒
+6. 当前工程仍是技术骨架；模拟玩法按 GDD **第一阶段（纯模拟）**推进
 
 ## 本机推荐路径（MonoManager 无法打开旧骨架时）
 
@@ -21,12 +30,6 @@ powershell -ExecutionPolicy Bypass -File scripts\setup\sync-from-repo-to-3dgame2
 ```
 
 之后只用 Hub 打开 `D:\MyProject\3dgame2`。
-
-## 文档
-
-- [需求文档](docs/需求文档.md)
-- [开发环境](docs/开发环境.md)
-- [ArtSource 说明](ArtSource/README.md)
 
 ## 技术选型（已锁定）
 
@@ -43,11 +46,13 @@ Assets/           Unity 资源与脚本
 Packages/         Unity 包清单
 ProjectSettings/  Unity 工程设置
 ArtSource/        Blender 源文件与 FBX 导出
-docs/             需求与环境文档
+docs/             GDD / 环境 / 故障排除
 scripts/setup/    环境检查 / 安装脚本
 scripts/blender/  Blender 导出与示例脚本
 ```
 
 ## 当前状态
 
-开发环境骨架已就绪：Unity 工程可打开、示例道具 FBX 已导入、基础脚本与场景已就位。请在本机安装 Unity Editor 后继续灰盒玩法。
+- GDD v1.0 已入库：`docs/GameDesignDocument.md`
+- Unity 工程骨架可用于后续模拟与表现层接入
+- 下一步建议：按 GDD 第一阶段实现纯模拟（时间 / 资源 / 人口 / 地区）
