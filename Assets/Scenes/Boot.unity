@@ -316,7 +316,7 @@ GameObject:
   - component: {fileID: 1000000002}
   - component: {fileID: 1000000003}
   m_Layer: 0
-  m_Name: Bootstrap
+  m_Name: SimulationBootstrap
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -346,10 +346,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1000000001}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 36af71f5cc55408cb824217e401fefea, type: 3}
+  m_Script: {fileID: 11500000, guid: 2c73d280ea964d8d907213a2409561b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  nextScene: MainMenu
 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
