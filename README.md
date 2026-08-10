@@ -4,34 +4,31 @@
 
 ## 设计文档（优先阅读）
 
-- [**Game Design Document**](docs/GameDesignDocument.md) — 《Divine World Simulation》游戏设计需求说明书（v1.0）
+- [**Game Design Document**](docs/GameDesignDocument.md) — 《Divine World Simulation》GDD v1.0
+- [**Phase 1 范围**](docs/Phase1-Scope.md) — 当前实现锁定
 - [开发环境](docs/开发环境.md)
 - [故障排除（MonoManager）](docs/故障排除-MonoManager.md)
-- [早期工程需求（已过时，仅作技术骨架参考）](docs/需求文档.md)
 
-> 后续将另拆《程序设计文档》《算法设计文档》，与 GDD 分离。
+## 现在能玩什么（Phase 1）
+
+打开场景 **`Assets/Scenes/Boot.unity`**（或任意空场景挂上 `SimulationBootstrap`）：
+
+- 自动跑世界：教廷区 / 帝国区 / 海
+- 种族：人类、人鱼
+- 左侧观察仪：暂停、+日、微调生育/收成/疫病/稳定
+- 场景里三个「圆柱+圆球」图腾随人口缩放
 
 ## 快速开始（本机）
 
-1. 安装 **Unity Hub**，使用已安装的 Editor **`2022.3.62f3c1` LTS**（或同系列 2022.3 LTS）
-2. 安装 **Blender 4.2 LTS**
-3. 拉取分支 `cursor/unity-blender-requirements-55cc`
-4. Unity Hub → **Open** → 选择本仓库根目录
-5. 若提示版本，选 **使用 2022.3.62f3c1 打开**
-6. 当前工程仍是技术骨架；模拟玩法按 GDD **第一阶段（纯模拟）**推进
-
-## 本机推荐路径（MonoManager 无法打开旧骨架时）
-
-若你已用 Hub 新建 URP 项目在 `D:\MyProject\3dgame2`：
+1. Unity **2022.3.62f3c1** 打开工程（推荐 `D:\MyProject\3dgame2`，用 sync 脚本同步）
+2. 打开 `Boot` 场景 → Play
+3. 用观察仪微调概率，看三地人口与资源变化
 
 ```powershell
-# 先 clone/pull 本仓库，再执行：
 powershell -ExecutionPolicy Bypass -File scripts\setup\sync-from-repo-to-3dgame2.ps1 -Dest "D:\MyProject\3dgame2"
 ```
 
-之后只用 Hub 打开 `D:\MyProject\3dgame2`。
-
-## 技术选型（已锁定）
+## 技术选型
 
 | 用途 | 软件 |
 |------|------|
@@ -39,20 +36,8 @@ powershell -ExecutionPolicy Bypass -File scripts\setup\sync-from-repo-to-3dgame2
 | 建模 | Blender **4.2 LTS** |
 | 版本管理 | Git + Git LFS |
 
-## 仓库结构
-
-```text
-Assets/           Unity 资源与脚本
-Packages/         Unity 包清单
-ProjectSettings/  Unity 工程设置
-ArtSource/        Blender 源文件与 FBX 导出
-docs/             GDD / 环境 / 故障排除
-scripts/setup/    环境检查 / 安装脚本
-scripts/blender/  Blender 导出与示例脚本
-```
-
 ## 当前状态
 
-- GDD v1.0 已入库：`docs/GameDesignDocument.md`
-- Unity 工程骨架可用于后续模拟与表现层接入
-- 下一步建议：按 GDD 第一阶段实现纯模拟（时间 / 资源 / 人口 / 地区）
+- GDD + Phase1 范围已入库
+- Phase 1 纯模拟核心 + 观察仪 UI + 极简 3D 标记已提交
+- 下一步：存档 JSON、组织层（Level 1）、更明确的事件条件表
