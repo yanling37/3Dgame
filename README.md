@@ -8,6 +8,7 @@
 - [**Phase 1 范围**](docs/Phase1-Scope.md) — 当前实现锁定
 - [开发环境](docs/开发环境.md)
 - [故障排除（MonoManager）](docs/故障排除-MonoManager.md)
+- [存档系统](docs/SaveSystem.md) — Phase 1 本地 JSON 存读档
 
 ## 现在能玩什么（Phase 1）
 
@@ -15,7 +16,7 @@
 
 - 自动跑世界：教廷区 / 帝国区 / 海
 - 种族：人类、人鱼
-- 左侧观察仪：暂停、+日、微调生育/收成/疫病/稳定
+- 左侧观察仪：暂停、+日、微调生育/收成/疫病/稳定、**存档/读档（3 槽 + 自动存档）**
 - 场景里三个「圆柱+圆球」图腾随人口缩放
 
 ## 快速开始（本机）
@@ -40,4 +41,5 @@ powershell -ExecutionPolicy Bypass -File scripts\setup\sync-from-repo-to-3dgame2
 
 - GDD + Phase1 范围已入库
 - Phase 1 纯模拟核心 + 观察仪 UI + 极简 3D 标记已提交
-- 下一步：存档 JSON、组织层（Level 1）、更明确的事件条件表
+- Phase 1 **JSON 存档**已落地（见 [存档系统](docs/SaveSystem.md)）
+- 下一步：组织层（Level 1）、更明确的事件条件表

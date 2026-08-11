@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using DivineWorld.Simulation.Data;
 using DivineWorld.Simulation.Player;
+using DivineWorld.Simulation.Save;
 using DivineWorld.Simulation.Systems;
 using UnityEngine;
 
@@ -17,6 +18,7 @@ namespace DivineWorld.Simulation.Core
         [SerializeField] bool autoRun = true;
         [SerializeField, Range(1, 30)] int daysPerFrameWhenFast = 1;
 
+        public int Seed => seed;
         public WorldState State { get; private set; }
         public RaceDefinition[] Races { get; private set; }
         public ObserverInfluence Influence { get; private set; } = new ObserverInfluence();
@@ -68,6 +70,98 @@ namespace DivineWorld.Simulation.Core
             Influence = new ObserverInfluence();
             _dayTimer = 0f;
             OnDayAdvanced?.Invoke(State);
+        }
+
+        public SaveGameDto ToSaveDto()
+        {
+            // Round-trip clone so the DTO does not alias live mutable state.
+            string worldJson = State != null ? JsonUtility.ToJson(State) : null;
+            var worldClone = string.IsNullOrEmpty(worldJson)
+                ? null
+                : JsonUtility.FromJson<WorldState>(worldJson);
+
+            var dto = new SaveGameDto
+            {
+                schemaVersion = SaveService.CurrentSchemaVersion,
+                seed = seed,
+                secondsPerDay = secondsPerDay,
+                autoRun = autoRun,
+                world = worldClone,
+                fertilityBlessing = Influence.FertilityBlessing,
+                harvestBlessing = Influence.HarvestBlessing,
+                diseaseCurse = Influence.DiseaseCurse,
+                stabilityBlessing = Influence.StabilityBlessing,
+                hasFocusRegion = Influence.FocusRegion.HasValue,
+                focusRegion = Influence.FocusRegion ?? RegionId.Theocracy
+            };
+            return dto;
+        }
+
+        public bool ApplySaveDto(SaveGameDto dto, out string error)
+        {
+            error = null;
+            if (dto == null || dto.world == null)
+            {
+                error = "存档数据无效";
+                return false;
+            }
+
+            if (dto.schemaVersion != SaveService.CurrentSchemaVersion)
+            {
+                error = $"存档版本不兼容（文件 v{dto.schemaVersion}，当前 v{SaveService.CurrentSchemaVersion}）";
+                return false;
+            }
+
+            seed = dto.seed;
+            secondsPerDay = Mathf.Max(0.05f, dto.secondsPerDay);
+            autoRun = dto.autoRun;
+
+            string worldJson = JsonUtility.ToJson(dto.world);
+            State = JsonUtility.FromJson<WorldState>(worldJson);
+            EnsureRegionResources(State);
+
+            Races = DefaultWorldFactory.CreateRaces();
+            Influence = new ObserverInfluence
+            {
+                FertilityBlessing = dto.fertilityBlessing,
+                HarvestBlessing = dto.harvestBlessing,
+                DiseaseCurse = dto.diseaseCurse,
+                StabilityBlessing = dto.stabilityBlessing,
+                FocusRegion = dto.hasFocusRegion ? dto.focusRegion : (RegionId?)null
+            };
+
+            int totalDays = State != null ? State.TotalDays : 0;
+            _rng = new System.Random(unchecked(seed ^ (totalDays * 397)));
+            _dayTimer = 0f;
+            OnDayAdvanced?.Invoke(State);
+            return true;
+        }
+
+        static void EnsureRegionResources(WorldState world)
+        {
+            if (world?.Regions == null)
+            {
+                return;
+            }
+
+            foreach (var region in world.Regions)
+            {
+                if (region == null)
+                {
+                    continue;
+                }
+
+                if (region.Resources == null || region.Resources.Length < 7)
+                {
+                    var resized = new float[7];
+                    if (region.Resources != null)
+                    {
+                        Array.Copy(region.Resources, resized, Math.Min(region.Resources.Length, 7));
+                    }
+
+                    region.Resources = resized;
+                }
+            }
         }
 
         public void AdvanceDay()

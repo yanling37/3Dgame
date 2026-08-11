@@ -1,5 +1,6 @@
 using DivineWorld.Simulation.Core;
 using DivineWorld.Simulation.Data;
+using DivineWorld.Simulation.Save;
 using UnityEngine;
 
 namespace DivineWorld.Simulation.UI
@@ -15,14 +16,25 @@ namespace DivineWorld.Simulation.UI
         Vector2 _scroll;
         string _cachedReport = "";
         int _lastDay = -1;
+        string _statusMessage = "";
+        float _statusUntil;
+        bool _bound;
 
         public void Bind(SimulationWorld simulationWorld)
         {
+            if (world != null && _bound)
+            {
+                world.OnDayAdvanced -= OnDayAdvanced;
+            }
+
             world = simulationWorld;
+            _bound = false;
             if (world != null)
             {
-                world.OnDayAdvanced += _ => Refresh();
+                world.OnDayAdvanced += OnDayAdvanced;
+                _bound = true;
                 Refresh();
+                RefreshSlotHints();
             }
         }
 
@@ -33,10 +45,30 @@ namespace DivineWorld.Simulation.UI
                 world = FindObjectOfType<SimulationWorld>();
             }
 
-            if (world != null)
+            if (world != null && !_bound)
             {
-                world.OnDayAdvanced += _ => Refresh();
+                world.OnDayAdvanced += OnDayAdvanced;
+                _bound = true;
                 Refresh();
+                RefreshSlotHints();
+            }
+        }
+
+        void OnDestroy()
+        {
+            if (world != null && _bound)
+            {
+                world.OnDayAdvanced -= OnDayAdvanced;
+                _bound = false;
+            }
+        }
+
+        void OnDayAdvanced(WorldState state)
+        {
+            Refresh();
+            if (state != null && state.TotalDays > 0 && state.TotalDays % 30 == 0)
+            {
+                TryAutosave("自动存档（每30日）");
             }
         }
 
@@ -49,6 +81,90 @@ namespace DivineWorld.Simulation.UI
 
             _cachedReport = world.BuildStatusReport();
             _lastDay = world.State != null ? world.State.TotalDays : -1;
+        }
+
+        readonly string[] _slotHints = new string[4];
+
+        void RefreshSlotHints()
+        {
+            for (int i = 0; i <= 3; i++)
+            {
+                var slot = (SaveSlot)i;
+                if (SaveService.TryGetSlotInfo(slot, out var info) && info.Exists)
+                {
+                    _slotHints[i] = $"{SaveService.SlotLabel(slot)}: 年{info.Year} / {info.TotalDays}日";
+                }
+                else
+                {
+                    _slotHints[i] = $"{SaveService.SlotLabel(slot)}: 空";
+                }
+            }
+        }
+
+        void SetStatus(string message)
+        {
+            _statusMessage = message;
+            _statusUntil = Time.realtimeSinceStartup + 3.5f;
+        }
+
+        void TryAutosave(string reason)
+        {
+            if (world == null)
+            {
+                return;
+            }
+
+            if (SaveService.TrySave(SaveSlot.Autosave, world.ToSaveDto(), out var error))
+            {
+                SetStatus($"{reason} 成功");
+                RefreshSlotHints();
+            }
+            else
+            {
+                SetStatus($"自动存档失败: {error}");
+            }
+        }
+
+        void SaveSlot(SaveSlot slot)
+        {
+            if (world == null)
+            {
+                return;
+            }
+
+            if (SaveService.TrySave(slot, world.ToSaveDto(), out var error))
+            {
+                SetStatus($"已存入 {SaveService.SlotLabel(slot)}");
+                RefreshSlotHints();
+            }
+            else
+            {
+                SetStatus($"存档失败: {error}");
+            }
+        }
+
+        void LoadSlot(SaveSlot slot)
+        {
+            if (world == null)
+            {
+                return;
+            }
+
+            if (!SaveService.TryLoad(slot, out var dto, out var error))
+            {
+                SetStatus($"读档失败: {error}");
+                return;
+            }
+
+            if (!world.ApplySaveDto(dto, out error))
+            {
+                SetStatus($"读档失败: {error}");
+                return;
+            }
+
+            SetStatus($"已读取 {SaveService.SlotLabel(slot)}");
+            Refresh();
+            RefreshSlotHints();
         }
 
         void OnGUI()
@@ -67,7 +183,12 @@ namespace DivineWorld.Simulation.UI
             GUILayout.BeginHorizontal();
             if (GUILayout.Button(world.AutoRun ? "暂停" : "继续", GUILayout.Width(70)))
             {
+                bool wasRunning = world.AutoRun;
                 world.AutoRun = !world.AutoRun;
+                if (wasRunning && !world.AutoRun)
+                {
+                    TryAutosave("暂停自动存档");
+                }
             }
 
             if (GUILayout.Button("+1日", GUILayout.Width(60)))
@@ -89,6 +210,64 @@ namespace DivineWorld.Simulation.UI
             }
 
             GUILayout.EndHorizontal();
+
+            GUILayout.Space(6);
+            GUILayout.Label("存档");
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("存1", GUILayout.Width(50)))
+            {
+                SaveSlot(SaveSlot.Slot1);
+            }
+
+            if (GUILayout.Button("存2", GUILayout.Width(50)))
+            {
+                SaveSlot(SaveSlot.Slot2);
+            }
+
+            if (GUILayout.Button("存3", GUILayout.Width(50)))
+            {
+                SaveSlot(SaveSlot.Slot3);
+            }
+
+            if (GUILayout.Button("存自动", GUILayout.Width(60)))
+            {
+                SaveSlot(SaveSlot.Autosave);
+            }
+
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("读1", GUILayout.Width(50)))
+            {
+                LoadSlot(SaveSlot.Slot1);
+            }
+
+            if (GUILayout.Button("读2", GUILayout.Width(50)))
+            {
+                LoadSlot(SaveSlot.Slot2);
+            }
+
+            if (GUILayout.Button("读3", GUILayout.Width(50)))
+            {
+                LoadSlot(SaveSlot.Slot3);
+            }
+
+            if (GUILayout.Button("读自动", GUILayout.Width(60)))
+            {
+                LoadSlot(SaveSlot.Autosave);
+            }
+
+            GUILayout.EndHorizontal();
+
+            GUILayout.Label(_slotHints[1] ?? "槽1: ?");
+            GUILayout.Label(_slotHints[2] ?? "槽2: ?");
+            GUILayout.Label(_slotHints[3] ?? "槽3: ?");
+            GUILayout.Label(_slotHints[0] ?? "自动: ?");
+
+            if (!string.IsNullOrEmpty(_statusMessage) && Time.realtimeSinceStartup < _statusUntil)
+            {
+                GUILayout.Label(_statusMessage);
+            }
 
             GUILayout.Space(6);
             GUILayout.Label("速度（秒/日）");
