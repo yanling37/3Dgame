@@ -8,18 +8,30 @@ using UnityEngine;
 namespace DivineWorld.Simulation.Core
 {
     /// <summary>
-    /// Owns world state and advances simulation ticks.
+    /// 世界模拟宿主：持有 WorldState / 种族表 / 观察者微调，并按日推进。
+    /// 调试建议：
+    /// 1) 固定 seed，保证随机天气/事件可复现；
+    /// 2) 把 autoRun 关掉，用 HUD 的 +1日 / +30日 单步进；
+    /// 3) 在 AdvanceDay 里对某个 Region 下断点，再步入 ResourceSystem / PopulationSystem。
     /// </summary>
     public class SimulationWorld : MonoBehaviour
     {
+        [Tooltip("世界随机种子。改这个会改变天气漂移与事件触发序列。")]
         [SerializeField] int seed = 20260810;
+
+        [Tooltip("自动运行时，多少真实秒推进 1 个游戏日。")]
         [SerializeField] float secondsPerDay = 0.35f;
+
+        [Tooltip("是否自动按时间推进。调试时建议先关掉，改用手动 +日。")]
         [SerializeField] bool autoRun = true;
+
+        [Tooltip("每次满足一日计时时，连续推进几天（加速用）。调试逐步逻辑时保持 1。")]
         [SerializeField, Range(1, 30)] int daysPerFrameWhenFast = 1;
 
         public WorldState State { get; private set; }
         public RaceDefinition[] Races { get; private set; }
         public ObserverInfluence Influence { get; private set; } = new ObserverInfluence();
+
         public bool AutoRun
         {
             get => autoRun;
@@ -32,6 +44,7 @@ namespace DivineWorld.Simulation.Core
             set => secondsPerDay = Mathf.Max(0.05f, value);
         }
 
+        /// <summary>每推进完一日（所有地区都结算后）触发，HUD / 图腾会监听它刷新。</summary>
         public event Action<WorldState> OnDayAdvanced;
 
         System.Random _rng;
@@ -60,6 +73,9 @@ namespace DivineWorld.Simulation.Core
             }
         }
 
+        /// <summary>
+        /// 重建初始世界。会重置 Influence 微调为 1.0，并重新用 seed 创建 Random。
+        /// </summary>
         public void ResetWorld()
         {
             _rng = new System.Random(seed);
@@ -70,6 +86,11 @@ namespace DivineWorld.Simulation.Core
             OnDayAdvanced?.Invoke(State);
         }
 
+        /// <summary>
+        /// 推进完整一日。顺序固定，调试时不要对调：
+        /// 对每个地区：ResourceSystem.TickDay → PopulationSystem.TickDay
+        /// 然后：日期 +1；满 360 日进一年。
+        /// </summary>
         public void AdvanceDay()
         {
             if (State == null)
@@ -80,7 +101,11 @@ namespace DivineWorld.Simulation.Core
             foreach (var region in State.Regions)
             {
                 var race = RegionLookup.FindRace(Races, region.DominantRace);
+
+                // 1) 先结算资源（产量/消耗/缺粮反馈/天气）
                 ResourceSystem.TickDay(region, race, Influence, _rng);
+
+                // 2) 再结算人口（出生死亡会读到「本轮更新后」的粮库存）
                 PopulationSystem.TickDay(region, race, Influence, _rng);
             }
 
@@ -107,6 +132,9 @@ namespace DivineWorld.Simulation.Core
             }
         }
 
+        /// <summary>
+        /// 给观察仪用的文本快照。数值格式化集中在这里，改显示不必动算法。
+        /// </summary>
         public string BuildStatusReport()
         {
             if (State == null)
