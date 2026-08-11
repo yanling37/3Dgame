@@ -155,7 +155,6 @@ namespace DivineWorld.Simulation.Systems
                 * influence.RegionMultiplier(region.Id, influence.DiseaseCurse);
 
             // 人口下限 100，避免地区被算「灭族」导致后续除零/归零连锁难调
-            float popBefore = region.Population;
             region.Population = Mathf.Max(100f, region.Population + birth - naturalDeath - diseaseDeath);
 
             // 疫病压力自然衰减：每日 *0.995（约 140 日衰减到一半左右量级，便于观察）
@@ -172,7 +171,7 @@ namespace DivineWorld.Simulation.Systems
             region.FaithLevel = Mathf.Clamp01(
                 Mathf.Lerp(region.FaithLevel, Mathf.Clamp01(faith / 25000f), 0.002f));
 
-            // ---- 低稳定随机事件（1% 且 Stability&lt;0.45）----
+            // ---- 低稳定随机事件（约 1% 且 Stability < 0.45）----
             // 只扣稳定并改 LastEvent，方便观察仪看到「地方骚乱传闻」。
             if (rng.NextDouble() < 0.01 && region.Stability < 0.45f)
             {
@@ -180,9 +179,8 @@ namespace DivineWorld.Simulation.Systems
                 region.Stability = Mathf.Max(0.1f, region.Stability - 0.02f);
             }
 
-            // 需要逐步调试时，可临时打开：
-            // Debug.Log($"[Pop] {region.DisplayName} {popBefore:0}->{region.Population:0} birth={birth:0.0} deathN={naturalDeath:0.0} deathD={diseaseDeath:0.0}");
-            _ = popBefore; // 保留变量，便于你取消上面注释后立刻用
+            // 逐步调试人口时，可临时取消下一行注释：
+            // Debug.Log($"[Pop] {region.DisplayName} birth={birth:0.0} deathN={naturalDeath:0.0} deathD={diseaseDeath:0.0} pop={region.Population:0}");
         }
     }
 
