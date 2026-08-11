@@ -5,7 +5,7 @@ using UnityEngine;
 namespace DivineWorld.Simulation.UI
 {
     /// <summary>
-    /// Immediate-mode observer panel so Phase 1 runs without manual Canvas wiring.
+    /// Observer HUD for Phase 2: season, fast-forward, consistency test.
     /// </summary>
     public class WorldObserverHud : MonoBehaviour
     {
@@ -15,15 +15,28 @@ namespace DivineWorld.Simulation.UI
         Vector2 _scroll;
         string _cachedReport = "";
         int _lastDay = -1;
+        bool _subscribed;
 
         public void Bind(SimulationWorld simulationWorld)
         {
+            if (world != null && _subscribed)
+            {
+                world.OnDayAdvanced -= OnDay;
+                _subscribed = false;
+            }
+
             world = simulationWorld;
             if (world != null)
             {
-                world.OnDayAdvanced += _ => Refresh();
+                world.OnDayAdvanced += OnDay;
+                _subscribed = true;
                 Refresh();
             }
+        }
+
+        void OnDay(WorldState _)
+        {
+            Refresh();
         }
 
         void Start()
@@ -33,10 +46,17 @@ namespace DivineWorld.Simulation.UI
                 world = FindObjectOfType<SimulationWorld>();
             }
 
-            if (world != null)
+            if (world != null && !_subscribed)
             {
-                world.OnDayAdvanced += _ => Refresh();
-                Refresh();
+                Bind(world);
+            }
+        }
+
+        void OnDestroy()
+        {
+            if (world != null && _subscribed)
+            {
+                world.OnDayAdvanced -= OnDay;
             }
         }
 
@@ -59,8 +79,8 @@ namespace DivineWorld.Simulation.UI
             }
 
             const float pad = 12f;
-            var area = new Rect(pad, pad, Mathf.Min(520f, Screen.width - pad * 2f), Screen.height - pad * 2f);
-            GUI.Box(area, "Divine World · 观察仪 (Phase 1)");
+            var area = new Rect(pad, pad, Mathf.Min(560f, Screen.width - pad * 2f), Screen.height - pad * 2f);
+            GUI.Box(area, "Divine World · 观察仪 (Phase 2)");
 
             GUILayout.BeginArea(new Rect(area.x + 10, area.y + 28, area.width - 20, area.height - 36));
 
@@ -70,21 +90,37 @@ namespace DivineWorld.Simulation.UI
                 world.AutoRun = !world.AutoRun;
             }
 
-            if (GUILayout.Button("+1日", GUILayout.Width(60)))
+            if (GUILayout.Button("+1日", GUILayout.Width(55)))
             {
                 world.AdvanceDay();
-                Refresh();
             }
 
-            if (GUILayout.Button("+30日", GUILayout.Width(70)))
+            if (GUILayout.Button("+30日", GUILayout.Width(60)))
             {
                 world.AdvanceDays(30);
-                Refresh();
             }
 
+            if (GUILayout.Button("+1年快进", GUILayout.Width(80)))
+            {
+                world.FastForwardYears(1);
+            }
+
+            if (GUILayout.Button("+10年快进", GUILayout.Width(90)))
+            {
+                world.FastForwardYears(10);
+            }
+
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
             if (GUILayout.Button("重置世界", GUILayout.Width(80)))
             {
                 world.ResetWorld();
+            }
+
+            if (GUILayout.Button("一致性测试 1年", GUILayout.Width(120)))
+            {
+                world.RunConsistencyTestOneYear();
                 Refresh();
             }
 

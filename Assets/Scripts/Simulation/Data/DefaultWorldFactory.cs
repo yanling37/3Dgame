@@ -56,6 +56,9 @@ namespace DivineWorld.Simulation.Data
                 Year = 1,
                 DayOfYear = 1,
                 TotalDays = 0,
+                CurrentSeason = SeasonId.Spring,
+                SeasonIndex = 0,
+                SeasonProgress = 0f,
                 Regions = new[]
                 {
                     // 教廷：人口中等，信仰高、教育略高，粮水够开局观察「高信仰」走势
