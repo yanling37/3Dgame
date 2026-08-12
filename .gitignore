@@ -6,9 +6,12 @@
 /[Bb]uilds/
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
-*.csproj
-*.unityproj
-*.sln
+# Unity-generated project files (keep Tools/HeadlessSimTests tracked)
+/*.csproj
+/*.unityproj
+/*.sln
+Assets/**/*.csproj
+Assets/**/*.sln
 *.suo
 *.tmp
 *.user
@@ -36,6 +39,10 @@ ExportedObj/
 *.app
 MemoryCaptures/
 Recordings/
+
+# Headless test build outputs
+Tools/**/bin/
+Tools/**/obj/
 
 # OS
 .DS_Store
