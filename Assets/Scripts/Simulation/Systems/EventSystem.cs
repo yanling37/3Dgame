@@ -197,12 +197,13 @@ namespace DivineWorld.Simulation.Systems
         {
             unchecked
             {
-                int h = seed;
-                h = h * 73856093 ^ day * 19349663;
-                h = h * 83492791 ^ region * 50331653;
-                h = h * 2654435761 ^ salt;
-                h &= 0x7fffffff;
-                return (h % 10000) / 10000f;
+                // 2654435761 does not fit in int; keep hash math in uint then cast back.
+                uint h = (uint)seed;
+                h = h * 73856093u ^ (uint)day * 19349663u;
+                h = h * 83492791u ^ (uint)region * 50331653u;
+                h = h * 2654435761u ^ (uint)salt;
+                h &= 0x7fffffffu;
+                return (h % 10000u) / 10000f;
             }
         }
     }
