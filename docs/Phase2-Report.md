@@ -104,3 +104,9 @@ Pop' = max(100, Pop + birth - naturalDeath - diseaseDeath)
 2. JSON 导出/读档 `WorldState`
 3. 事件预报表数据化（可调阈值，而不是写死在 EventSystem）
 4. 地图相机/地区点击查看详情面板
+
+## 7. P2-A 冻结状态
+
+**P2-A 已验收并冻结。** 完整协议与突破条件见 [P2-A 冻结协议](P2-A-Freeze-Protocol.md)。
+
+P2-B 起：Map / HUD / Statistics 只能消费 Simulation State；不得改人口/资源/季节/天气/事件/FastForward 核心数学。观感类平衡问题属 Design，须上报决策。

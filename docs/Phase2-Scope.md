@@ -5,6 +5,9 @@
 | 目标 | 季节、数据驱动资源、事件状态、地图可视化、数学 FastForward |
 | 不做 | NPC / 神之注视 / 英雄 / 神格 / 自走棋 |
 | 入口 | `SimulationBootstrap` → `Boot.unity` |
+| **P2-A 状态** | **已冻结** — 见 [P2-A 冻结协议](P2-A-Freeze-Protocol.md) |
+
+> **P2-B 开工约束**：可读取 / 显示 / 统计 / 可视化 Simulation State；**不得**为 UI 便利改动人口、资源、季节、天气、事件、FastForward 核心数学。平衡类观感问题属 Design，须上报决策，不得自行改公式。
 
 ## 日流程
 

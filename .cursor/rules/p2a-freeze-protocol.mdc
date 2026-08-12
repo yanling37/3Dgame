@@ -1,0 +1,37 @@
+---
+description: P2-A simulation math is frozen; P2-B may only read/display Simulation State
+alwaysApply: true
+---
+
+# P2-A 冻结协议（P2-B 开发必读）
+
+P2-A 已验收并冻结。完整协议见 `docs/P2-A-Freeze-Protocol.md`。
+
+## 硬性要求
+
+1. **禁止**为 UI / 地图 / 统计 / 报告 / 可视化 修改 P2-A 核心数学。
+2. **冻结文件（核心数学）**：
+   - `Assets/Scripts/Simulation/Systems/PopulationSystem.cs`
+   - `Assets/Scripts/Simulation/Systems/ResourceSystem.cs`
+   - `Assets/Scripts/Simulation/Systems/SeasonSystem.cs`
+   - `Assets/Scripts/Simulation/Systems/WeatherSystem.cs`
+   - `Assets/Scripts/Simulation/Systems/EventSystem.cs`
+   - `Assets/Scripts/Simulation/Systems/FastForwardSystem.cs`
+   - `Assets/Scripts/Simulation/Systems/SocietySystem.cs`
+   - `Assets/Scripts/Simulation/Data/SimulationConfig.cs`（默认系数）
+   - `Assets/Scripts/Simulation/Core/DailySimulation.cs`
+3. **禁止**：改出生率、死亡率、承载力、水消耗、粮产/腐烂、疾病、事件概率/时长、季节长度、FastForward 数学。
+4. **平衡观感**（人口偏低、粮太多、水太少、死亡率高等）属于 **P2 Balance / Design**，**不得自行改公式**；必须报告决策者。
+5. **仅 P0/P1** 可突破冻结（NaN/Infinity、模拟停摆、数据损坏、FF 灾难错误；或明确违反已定义关系如水=0仍产粮、modifier 方向反转、事件永久残留等）。触及冻结文件时必须在说明中标注 P0/P1 理由。
+
+## P2-B 架构
+
+```text
+Simulation → Simulation State → Map / HUD / Statistics（只读同一份状态）
+```
+
+- 允许：读取、显示、记录、统计、可视化 Simulation State。
+- 禁止：UI/地图/图表自己再算一套人口或粮食，或使用伪造时间序列。
+- 禁止：重新实现平行模拟。
+
+改玩法表现层时，优先新增 Presentation / UI / 统计模块；不要“顺手调一下”冻结系统里的公式。

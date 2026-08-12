@@ -6,10 +6,11 @@
 
 - [**Game Design Document**](docs/GameDesignDocument.md) — 《Divine World Simulation》GDD v1.0
 - [**Phase 1 范围**](docs/Phase1-Scope.md) — 当前实现锁定
+- [**P2-A 冻结协议**](docs/P2-A-Freeze-Protocol.md) — **P2-A Baseline 已冻结；P2-B 开工前必读**
 - [开发环境](docs/开发环境.md)
 - [故障排除（MonoManager）](docs/故障排除-MonoManager.md) — **本机反复打不开时必读；云端勿提交骨架 ProjectSettings**
 
-## 现在能玩什么（Phase 2 / 2-A）
+## 现在能玩什么（Phase 2 / 2-A · 已冻结）
 
 打开场景 **`Assets/Scenes/Boot.unity`**：
 
@@ -26,6 +27,7 @@
 - [GDD](docs/GameDesignDocument.md)
 - [Phase 2 范围](docs/Phase2-Scope.md)
 - [Phase 2 报告](docs/Phase2-Report.md)
+- [P2-A 冻结协议](docs/P2-A-Freeze-Protocol.md)
 
 ## 快速开始（本机）
 
@@ -49,7 +51,7 @@ powershell -ExecutionPolicy Bypass -File scripts\setup\sync-from-repo-to-3dgame2
 
 - GDD + Phase1 范围已入库
 - Phase 1 纯模拟核心 + 观察仪 UI + 极简 3D 标记已提交
-- **Phase 2-A**：360 天四季、季节天气、资源生命周期（Food/Water/Magic）、承载力人口、地区独立 ObserverInfluence
+- **Phase 2-A（已冻结）**：360 天四季、季节天气、资源生命周期（Food/Water/Magic）、承载力人口、地区独立 ObserverInfluence — 见 [冻结协议](docs/P2-A-Freeze-Protocol.md)
 - **Phase 2**：事件系统、地图可视化、数学快进与一致性测试
 - 无头测试：`dotnet run --project Tools/HeadlessSimTests/HeadlessSimTests/HeadlessSimTests.csproj -c Release`
-- 下一步（P2-B / P2-C）：饥荒/流民；历史数据/图表
+- 下一步（P2-B）：在 **只读 Simulation State** 上做表现 / 统计 / 可视化；**禁止**改 P2-A 核心数学（除非批准的 P0/P1）
