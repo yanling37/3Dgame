@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>DivineWorld.Simulation</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\UnityEngineShim\UnityEngineShim.csproj" />
+    <Compile Include="..\..\..\Assets\Scripts\Simulation\Data\**\*.cs" Link="Data\%(Filename)%(Extension)" />
+    <Compile Include="..\..\..\Assets\Scripts\Simulation\Player\ObserverInfluence.cs" Link="Player\ObserverInfluence.cs" />
+    <Compile Include="..\..\..\Assets\Scripts\Simulation\Systems\**\*.cs" Link="Systems\%(Filename)%(Extension)" />
+    <Compile Include="..\..\..\Assets\Scripts\Simulation\Core\DailySimulation.cs" Link="Core\DailySimulation.cs" />
+  </ItemGroup>
+</Project>

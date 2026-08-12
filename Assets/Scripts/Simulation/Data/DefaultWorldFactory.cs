@@ -1,9 +1,7 @@
-using DivineWorld.Simulation.Data;
-
 namespace DivineWorld.Simulation.Data
 {
     /// <summary>
-    /// Phase 1 default world: 教廷区 / 帝国区 / 海.
+    /// Phase 1/2-A default world: 教廷区 / 帝国区 / 海.
     /// Data-driven entry point; later replace with JSON / ScriptableObject.
     /// </summary>
     public static class DefaultWorldFactory
@@ -47,12 +45,13 @@ namespace DivineWorld.Simulation.Data
 
         public static WorldState CreateWorld()
         {
-            return new WorldState
+            var world = new WorldState
             {
                 WorldName = "初始大陆与近海",
                 Year = 1,
                 DayOfYear = 1,
                 TotalDays = 0,
+                CurrentSeason = SeasonId.Spring,
                 Regions = new[]
                 {
                     new RegionState
@@ -61,7 +60,12 @@ namespace DivineWorld.Simulation.Data
                         DisplayName = "教廷区",
                         DominantRace = RaceId.Human,
                         Population = 42000f,
-                        Resources = new float[] { 18000, 12000, 6000, 2500, 9000, 3500, 800 },
+                        // Food, Water, Timber, Ore, Faith, Knowledge, Magic
+                        Resources = new float[] { 18000, 9000, 6000, 2500, 9000, 3500, 800 },
+                        ProductionCapacity = new float[] { 850, 550, 420, 220, 0, 0, 0 },
+                        BaseWaterStorageCapacity = 12000f,
+                        LandCarryingCapacity = 55000f,
+                        IsSeaRegion = false,
                         Stability = 0.85f,
                         Education = 0.45f,
                         FaithLevel = 0.8f,
@@ -74,7 +78,11 @@ namespace DivineWorld.Simulation.Data
                         DisplayName = "帝国区",
                         DominantRace = RaceId.Human,
                         Population = 68000f,
-                        Resources = new float[] { 26000, 14000, 11000, 7000, 2500, 5000, 400 },
+                        Resources = new float[] { 26000, 11000, 11000, 7000, 2500, 5000, 400 },
+                        ProductionCapacity = new float[] { 1300, 700, 750, 520, 0, 0, 0 },
+                        BaseWaterStorageCapacity = 15000f,
+                        LandCarryingCapacity = 90000f,
+                        IsSeaRegion = false,
                         Stability = 0.7f,
                         Education = 0.4f,
                         FaithLevel = 0.35f,
@@ -87,15 +95,23 @@ namespace DivineWorld.Simulation.Data
                         DisplayName = "海",
                         DominantRace = RaceId.Merfolk,
                         Population = 18000f,
+                        // Water stock high but within sea capacity.
                         Resources = new float[] { 9000, 50000, 800, 1200, 1500, 2800, 3500 },
+                        ProductionCapacity = new float[] { 480, 2200, 40, 60, 0, 0, 0 },
+                        BaseWaterStorageCapacity = 80000f,
+                        LandCarryingCapacity = 28000f,
+                        IsSeaRegion = true,
                         Stability = 0.75f,
                         Education = 0.35f,
                         FaithLevel = 0.4f,
                         DiseasePressure = 0.04f,
-                        WeatherFactor = 1f
+                        WeatherFactor = 0.95f
                     }
                 }
             };
+
+            world.SyncSeasonFromDay();
+            return world;
         }
     }
 }

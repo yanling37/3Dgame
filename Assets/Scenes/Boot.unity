@@ -349,6 +349,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2c73d280ea964d8d907213a2409561b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  createCameraIfMissing: 1
+  createRegionMarkers: 1
+  createHud: 1
 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

@@ -1,0 +1,24 @@
+---
+description: Unity ProjectSettings must be editor-valid; never ship cloud skeleton settings
+alwaysApply: true
+---
+
+# Unity ProjectSettings（云端必读）
+
+本机反复出现：
+
+`GetManagerFromContext: pointer to object of manager 'MonoManager' is NULL`
+
+**根因**：仓库里用手写 / 云端骨架生成的 `ProjectSettings`（常见特征：`ProjectVersion.txt` 里是 `(china-lts)`、假 `productGUID`）在本机 Unity **2022.3.62f3c1** 打不开。
+
+## 硬性要求
+
+1. **不要**从零 YAML 拼一套 `ProjectSettings/` 冒充工程。
+2. **必须**使用本机 Unity Editor（2022.3.62f3c1）创建/打开过、可成功进入的工程里的 `ProjectSettings`。
+3. `ProjectVersion.txt` 必须类似：
+   `m_EditorVersionWithRevision: 2022.3.62f3c1 (1623fc0bbb97)`  
+   **禁止**只写 `(china-lts)`。
+4. 改玩法脚本时，**不要回滚**已验证可用的 `ProjectSettings`；若必须改，在能打开工程的编辑器里改后再提交。
+5. 详细说明见 `docs/故障排除-MonoManager.md`。
+
+本地已多次因错误 ProjectSettings 无法打开工程；提交前请自检上述条款。

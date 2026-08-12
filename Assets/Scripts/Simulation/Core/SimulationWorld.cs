@@ -8,7 +8,7 @@ using UnityEngine;
 namespace DivineWorld.Simulation.Core
 {
     /// <summary>
-    /// Owns world state and advances simulation ticks.
+    /// Owns world state and advances simulation ticks (P2-A calendar / season / resources / population).
     /// </summary>
     public class SimulationWorld : MonoBehaviour
     {
@@ -19,7 +19,15 @@ namespace DivineWorld.Simulation.Core
 
         public WorldState State { get; private set; }
         public RaceDefinition[] Races { get; private set; }
+        public SimulationConfig Config { get; private set; }
         public ObserverInfluence Influence { get; private set; } = new ObserverInfluence();
+
+        public int CurrentYear => State?.Year ?? 1;
+        public int DayOfYear => State?.DayOfYear ?? 1;
+        public SeasonId CurrentSeason => State?.CurrentSeason ?? SeasonId.Spring;
+        public int DayInSeason => State?.DayInSeason ?? 1;
+        public float SeasonProgress => State?.SeasonProgress ?? 0f;
+
         public bool AutoRun
         {
             get => autoRun;
@@ -63,13 +71,19 @@ namespace DivineWorld.Simulation.Core
         public void ResetWorld()
         {
             _rng = new System.Random(seed);
+            Config = SimulationConfig.CreateDefault();
             Races = DefaultWorldFactory.CreateRaces();
             State = DefaultWorldFactory.CreateWorld();
             Influence = new ObserverInfluence();
+            Influence.Bind(State);
             _dayTimer = 0f;
             OnDayAdvanced?.Invoke(State);
         }
 
+        /// <summary>
+        /// One simulation day:
+        /// Season → Weather → Resources → Population → Society → Advance Day.
+        /// </summary>
         public void AdvanceDay()
         {
             if (State == null)
@@ -77,24 +91,9 @@ namespace DivineWorld.Simulation.Core
                 return;
             }
 
-            foreach (var region in State.Regions)
-            {
-                var race = RegionLookup.FindRace(Races, region.DominantRace);
-                ResourceSystem.TickDay(region, race, Influence, _rng);
-                PopulationSystem.TickDay(region, race, Influence, _rng);
-            }
-
-            State.DayOfYear++;
-            State.TotalDays++;
-            if (State.DayOfYear > 360)
-            {
-                State.DayOfYear = 1;
-                State.Year++;
-                foreach (var region in State.Regions)
-                {
-                    region.LastEvent = $"新年纪事 · {State.Year}";
-                }
-            }
+            // Region.Influence is source of truth. HUD writes via PushToFocus on slider edits.
+            DailySimulation.SimulateDay(State, Races, Config, _rng);
+            SeasonSystem.AdvanceCalendar(State);
 
             OnDayAdvanced?.Invoke(State);
         }
@@ -114,20 +113,26 @@ namespace DivineWorld.Simulation.Core
                 return "世界未初始化";
             }
 
-            var sb = new StringBuilder(1024);
+            Influence?.PullFromFocus();
+
+            var sb = new StringBuilder(1280);
             sb.AppendLine($"【{State.WorldName}】 年份 {State.Year}  第 {State.DayOfYear} 日  (累计 {State.TotalDays} 日)");
+            sb.AppendLine($"季节 {State.CurrentSeason}  季内第 {State.DayInSeason} 日  进度 {State.SeasonProgress:0%}");
             sb.AppendLine($"注视焦点: {(Influence.FocusRegion.HasValue ? Influence.FocusRegion.Value.ToString() : "全域")}");
-            sb.AppendLine($"微调: 生育×{Influence.FertilityBlessing:0.00} 收成×{Influence.HarvestBlessing:0.00} 疫病×{Influence.DiseaseCurse:0.00} 稳定×{Influence.StabilityBlessing:0.00}");
+            sb.AppendLine($"微调(焦点): 生育×{Influence.FertilityBlessing:0.00} 收成×{Influence.HarvestBlessing:0.00} 疫病×{Influence.DiseaseCurse:0.00} 稳定×{Influence.StabilityBlessing:0.00}");
             sb.AppendLine();
 
             foreach (var r in State.Regions)
             {
                 var race = RegionLookup.FindRace(Races, r.DominantRace);
+                var inf = r.Influence;
                 sb.AppendLine($"=== {r.DisplayName}（{race.DisplayName}） ===");
-                sb.AppendLine($"人口 {r.Population:0} | 稳定 {r.Stability:0.00} | 教育 {r.Education:0.00} | 信仰 {r.FaithLevel:0.00} | 疫病 {r.DiseasePressure:0.00}");
-                sb.AppendLine($"粮 {r.Get(ResourceId.Food):0}  水 {r.Get(ResourceId.Water):0}  木 {r.Get(ResourceId.Timber):0}  矿 {r.Get(ResourceId.Ore):0}");
+                sb.AppendLine($"人口 {r.Population:0} | 承载力 {r.LastCarryingCapacity:0} | 稳定 {r.Stability:0.00} | 教育 {r.Education:0.00} | 信仰 {r.FaithLevel:0.00} | 疫病 {r.DiseasePressure:0.00}");
+                sb.AppendLine($"粮 {r.Get(ResourceId.Food):0} (产能 {r.GetProductionCapacity(ResourceId.Food):0}, 本日产 {r.LastFoodProduction:0.0}, 腐 {r.LastFoodSpoilage:0.0})");
+                sb.AppendLine($"水 {r.Get(ResourceId.Water):0}/{r.LastWaterCapacity:0}  木 {r.Get(ResourceId.Timber):0}  矿 {r.Get(ResourceId.Ore):0}");
                 sb.AppendLine($"信资 {r.Get(ResourceId.Faith):0}  知识 {r.Get(ResourceId.Knowledge):0}  魔力 {r.Get(ResourceId.Magic):0}");
-                sb.AppendLine($"天气系数 {r.WeatherFactor:0.00} | 近况: {r.LastEvent}");
+                sb.AppendLine($"天气 {r.WeatherFactor:0.00} | 地区注视 育×{inf.FertilityBlessing:0.00} 收×{inf.HarvestBlessing:0.00} 疫×{inf.DiseasePressure:0.00} 稳×{inf.StabilityBlessing:0.00}");
+                sb.AppendLine($"近况: {r.LastEvent}");
                 sb.AppendLine();
             }
 
