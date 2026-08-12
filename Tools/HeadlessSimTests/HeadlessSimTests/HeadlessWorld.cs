@@ -1,4 +1,3 @@
-using System;
 using DivineWorld.Simulation.Core;
 using DivineWorld.Simulation.Data;
 using DivineWorld.Simulation.Player;
@@ -8,7 +7,6 @@ namespace HeadlessSimTests
 {
     /// <summary>
     /// MonoBehaviour-free world runner for headless P2-A validation.
-    /// Mirrors SimulationWorld.AdvanceDay pipeline.
     /// </summary>
     public sealed class HeadlessWorld
     {
@@ -17,6 +15,7 @@ namespace HeadlessSimTests
         public SimulationConfig Config { get; private set; }
         public ObserverInfluence Influence { get; private set; }
         public System.Random Rng { get; private set; }
+        public int Seed { get; private set; }
 
         public HeadlessWorld(int seed = 20260810)
         {
@@ -25,10 +24,12 @@ namespace HeadlessSimTests
 
         public void Reset(int seed = 20260810)
         {
+            Seed = seed;
             Rng = new System.Random(seed);
             Config = SimulationConfig.CreateDefault();
             Races = DefaultWorldFactory.CreateRaces();
             State = DefaultWorldFactory.CreateWorld();
+            State.RandomSeed = seed;
             Influence = new ObserverInfluence();
             Influence.Bind(State);
         }
@@ -36,7 +37,6 @@ namespace HeadlessSimTests
         public void AdvanceDay()
         {
             DailySimulation.SimulateDay(State, Races, Config, Rng);
-            SeasonSystem.AdvanceCalendar(State);
         }
 
         public void AdvanceDays(int days)
@@ -44,9 +44,34 @@ namespace HeadlessSimTests
             for (int i = 0; i < days; i++)
             {
                 AdvanceDay();
+                if (State.HaltedOnNumericError)
+                {
+                    break;
+                }
             }
         }
 
+        public FastForwardSystem.Result FastForwardDays(int days)
+        {
+            return FastForwardSystem.FastForwardToTotalDay(State, Races, Config, State.TotalDays + days);
+        }
+
         public RegionState Region(RegionId id) => RegionLookup.FindRegion(State.Regions, id);
+
+        public void ApplyGlobalInfluence(float fertility, float harvest, float disease, float stability)
+        {
+            foreach (var region in State.Regions)
+            {
+                region.Influence.FertilityBlessing = fertility;
+                region.Influence.HarvestBlessing = harvest;
+                region.Influence.DiseasePressure = disease;
+                region.Influence.StabilityBlessing = stability;
+            }
+
+            Influence.FertilityBlessing = fertility;
+            Influence.HarvestBlessing = harvest;
+            Influence.DiseaseCurse = disease;
+            Influence.StabilityBlessing = stability;
+        }
     }
 }

@@ -9,6 +9,8 @@ namespace UnityEngine
         public static int Max(int a, int b) => a > b ? a : b;
         public static float Min(float a, float b) => a < b ? a : b;
         public static int Min(int a, int b) => a < b ? a : b;
+        public static float Abs(float f) => Math.Abs(f);
+        public static int Abs(int value) => Math.Abs(value);
         public static float Clamp(float value, float min, float max)
         {
             if (value < min) return min;
@@ -25,12 +27,6 @@ namespace UnityEngine
 
         public static float Clamp01(float value) => Clamp(value, 0f, 1f);
 
-        public static float Abs(float value) => Math.Abs(value);
-
-        public static float Exp(float value) => (float)Math.Exp(value);
-
-        public static float Pow(float f, float p) => (float)Math.Pow(f, p);
-
         public static float Lerp(float a, float b, float t)
         {
             t = Clamp01(t);
@@ -41,6 +37,12 @@ namespace UnityEngine
         {
             return Math.Abs(a - b) < 1e-5f * Math.Max(1f, Math.Max(Math.Abs(a), Math.Abs(b)));
         }
+
+        public static float Exp(float value) => (float)Math.Exp(value);
+        public static float Pow(float f, float p) => (float)Math.Pow(f, p);
+        public static float Sqrt(float value) => (float)Math.Sqrt(value);
+        public static int CeilToInt(float f) => (int)Math.Ceiling(f);
+        public static int FloorToInt(float f) => (int)Math.Floor(f);
     }
 
     [AttributeUsage(AttributeTargets.Field)]
@@ -79,5 +81,6 @@ namespace UnityEngine
     public class Debug
     {
         public static void Log(object message) => Console.WriteLine(message);
+        public static void LogError(object message) => Console.Error.WriteLine(message);
     }
 }

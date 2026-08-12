@@ -12,5 +12,6 @@
     <Compile Include="..\..\..\Assets\Scripts\Simulation\Player\ObserverInfluence.cs" Link="Player\ObserverInfluence.cs" />
     <Compile Include="..\..\..\Assets\Scripts\Simulation\Systems\**\*.cs" Link="Systems\%(Filename)%(Extension)" />
     <Compile Include="..\..\..\Assets\Scripts\Simulation\Core\DailySimulation.cs" Link="Core\DailySimulation.cs" />
+    <Compile Include="..\..\..\Assets\Scripts\Simulation\Testing\**\*.cs" Link="Testing\%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

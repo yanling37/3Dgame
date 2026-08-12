@@ -55,6 +55,7 @@ namespace DivineWorld.Simulation.Data
                 DayOfYear = 1,
                 TotalDays = 0,
                 CurrentSeason = SeasonId.Spring,
+                RandomSeed = 20260810,
                 Regions = new[]
                 {
                     new RegionState

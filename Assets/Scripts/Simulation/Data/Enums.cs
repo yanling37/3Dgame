@@ -55,4 +55,10 @@ namespace DivineWorld.Simulation.Data
         /// <summary>Stock capped by region capacity (e.g. Water).</summary>
         CapacityLimited = 2
     }
+
+    public enum SimEventScope
+    {
+        Regional = 0,
+        Global = 1
+    }
 }

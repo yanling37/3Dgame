@@ -120,6 +120,12 @@ namespace DivineWorld.Simulation.UI
                 Refresh();
             }
 
+            if (GUILayout.Button("快进1年", GUILayout.Width(80)))
+            {
+                world.FastForwardYears(1);
+                Refresh();
+            }
+
             if (GUILayout.Button("重置世界", GUILayout.Width(80)))
             {
                 world.ResetWorld();
@@ -129,6 +135,20 @@ namespace DivineWorld.Simulation.UI
             {
                 world.RunConsistencyTestOneYear();
                 Refresh();
+            }
+
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("一致性 Daily vs Fast 1年", GUILayout.Height(28)))
+            {
+                var report = DivineWorld.Simulation.Testing.FastForwardConsistencyTest.Run(
+                    world.State.Clone(),
+                    world.Races,
+                    world.Config,
+                    360);
+                Debug.Log(report.Text);
+                _cachedReport = report.Text + "\n\n" + world.BuildStatusReport();
             }
 
             GUILayout.EndHorizontal();

@@ -6,26 +6,54 @@ using UnityEngine;
 namespace DivineWorld.Simulation.Systems
 {
     /// <summary>
-    /// Formal region events enter simulation state (not just HUD strings).
+    /// Formal region events with start/duration/expiry. Regional events are independent per region.
     /// </summary>
     public static class EventSystem
     {
-        public static void EvaluateAndApply(WorldState world, System.Random rng)
+        public static void EvaluateAndApply(WorldState world, SimulationConfig config)
         {
+            if (world?.Regions == null || config == null)
+            {
+                return;
+            }
+
             foreach (var region in world.Regions)
             {
                 ExpireFinished(region, world.TotalDays);
-                MaybeUpsert(region, world, SimEventType.FoodShortage, region.Get(ResourceId.Food) < region.Population * 0.2f, 20, 1f);
-                MaybeUpsert(region, world, SimEventType.DiseaseOutbreak, region.DiseasePressure >= 0.25f, 30, region.DiseasePressure);
-                MaybeUpsert(region, world, SimEventType.LowStability, region.Stability < 0.45f, 25, 1f - region.Stability);
-                MaybeUpsert(region, world, SimEventType.HighStability, region.Stability >= 1.1f && region.Get(ResourceId.Food) > region.Population * 0.8f, 20, region.Stability);
 
-                // Rare natural disaster roll (reproducible via seed).
-                if (rng.NextDouble() < 0.002)
+                MaybeUpsert(
+                    region,
+                    world,
+                    SimEventType.FoodShortage,
+                    region.LastFoodReserveDays < config.FoodShortageReserveDays
+                    || region.Get(ResourceId.Food) < region.Population * config.FoodShortageRatio,
+                    config.FoodShortageEventDuration,
+                    1f);
+
+                MaybeUpsert(
+                    region,
+                    world,
+                    SimEventType.DiseaseOutbreak,
+                    region.DiseasePressure >= 0.25f,
+                    config.DiseaseOutbreakEventDuration,
+                    region.DiseasePressure);
+
+                MaybeUpsert(region, world, SimEventType.LowStability, region.Stability < 0.45f, 25, 1f - region.Stability);
+                MaybeUpsert(
+                    region,
+                    world,
+                    SimEventType.HighStability,
+                    region.Stability >= 1.1f && region.Get(ResourceId.Food) > region.Population * config.FoodSurplusRatio,
+                    20,
+                    region.Stability);
+
+                // Deterministic regional disaster roll — same predicate used by FastForward forecast.
+                float roll = Hash01(world.RandomSeed, world.TotalDays, (int)region.Id, 3);
+                if (roll < config.NaturalDisasterChancePerDay)
                 {
-                    Upsert(region, world, SimEventType.NaturalDisaster, 15, 0.8f + (float)rng.NextDouble() * 0.4f);
-                    region.Stability = Mathf.Max(0.1f, region.Stability - 0.08f);
-                    region.Add(ResourceId.Food, -region.Population * 0.05f);
+                    float severity = 0.8f + Hash01(world.RandomSeed, world.TotalDays, (int)region.Id, 7) * 0.4f;
+                    Upsert(region, world, SimEventType.NaturalDisaster, config.NaturalDisasterDuration, severity, SimEventScope.Regional);
+                    ApplyEventImpact(region, FindActive(region, SimEventType.NaturalDisaster, world.TotalDays), config, initialImpact: true);
                 }
 
                 region.LastEvent = Summarize(region);
@@ -34,87 +62,99 @@ namespace DivineWorld.Simulation.Systems
 
         public static void ApplyYearTurn(WorldState world)
         {
+            if (world?.Regions == null)
+            {
+                return;
+            }
+
             foreach (var region in world.Regions)
             {
-                Upsert(region, world, SimEventType.YearTurn, 5, 1f);
+                Upsert(region, world, SimEventType.YearTurn, 5, 1f, SimEventScope.Global);
                 region.LastEvent = $"新年纪事 · {world.Year}";
             }
         }
 
-        public static void ApplyEventImpact(RegionState region, RegionEvent evt)
+        public static void ApplyEventImpact(RegionState region, RegionEvent evt, SimulationConfig config, bool initialImpact)
         {
+            if (region == null || evt == null)
+            {
+                return;
+            }
+
             switch (evt.EventType)
             {
                 case SimEventType.DiseaseOutbreak:
-                    region.DiseasePressure = Mathf.Clamp01(region.DiseasePressure + 0.15f * evt.Severity);
-                    region.Stability = Mathf.Max(0.1f, region.Stability - 0.05f * evt.Severity);
+                    if (initialImpact)
+                    {
+                        region.DiseasePressure = Mathf.Clamp01(region.DiseasePressure + 0.15f * evt.Severity);
+                        region.Stability = Mathf.Max(0.05f, region.Stability - 0.05f * evt.Severity);
+                    }
                     break;
                 case SimEventType.FoodShortage:
-                    region.Stability = Mathf.Max(0.1f, region.Stability - 0.04f * evt.Severity);
+                    if (initialImpact)
+                    {
+                        region.Stability = Mathf.Max(0.05f, region.Stability - 0.04f * evt.Severity);
+                    }
                     break;
                 case SimEventType.NaturalDisaster:
-                    region.Stability = Mathf.Max(0.1f, region.Stability - 0.1f * evt.Severity);
-                    region.Add(ResourceId.Food, -region.Population * 0.08f * evt.Severity);
+                    if (initialImpact)
+                    {
+                        region.Stability = Mathf.Max(0.05f, region.Stability - 0.1f * evt.Severity);
+                        region.Add(ResourceId.Food, -region.Population * 0.08f * evt.Severity);
+                    }
                     break;
                 case SimEventType.LowStability:
-                    region.Stability = Mathf.Max(0.1f, region.Stability - 0.02f);
+                    if (initialImpact)
+                    {
+                        region.Stability = Mathf.Max(0.05f, region.Stability - 0.02f);
+                    }
                     break;
             }
         }
 
         /// <summary>
-        /// Forecast major breakpoints inside [fromDay, toDay) without mutating world.
-        /// Uses deterministic hash of seed+day+region for reproducibility.
+        /// Active NaturalDisaster reduces food production continuously until expiry.
         /// </summary>
-        public static List<RegionEvent> ForecastBreakpoints(WorldState world, int fromDay, int toDay, int seed)
+        public static float GetFoodProductionEventModifier(RegionState region, int totalDay, SimulationConfig config)
+        {
+            float severity = region.GetActiveEventSeverity(SimEventType.NaturalDisaster, totalDay);
+            if (severity <= 0f)
+            {
+                return 1f;
+            }
+
+            float penalty = config.NaturalDisasterFoodProductionPenalty * Mathf.Clamp01(severity);
+            return Mathf.Clamp(1f - penalty, 0f, 1f);
+        }
+
+        /// <summary>
+        /// Forecast regional disaster breakpoints using the same Hash01 predicate as daily evaluation.
+        /// </summary>
+        public static List<RegionEvent> ForecastBreakpoints(WorldState world, int fromDayExclusive, int toDayExclusive, SimulationConfig config)
         {
             var list = new List<RegionEvent>();
-            // Sample each season boundary and mid-season for disaster / disease risk.
-            for (int day = fromDay; day < toDay; day += WorldState.DaysPerSeason / 2)
+            if (world?.Regions == null || config == null)
+            {
+                return list;
+            }
+
+            for (int day = fromDayExclusive + 1; day <= toDayExclusive; day++)
             {
                 foreach (var region in world.Regions)
                 {
-                    float diseaseRisk = region.DiseasePressure;
-                    float foodRisk = region.Get(ResourceId.Food) < region.Population * 0.35f ? 0.4f : 0.05f;
-                    float roll = Hash01(seed, day, (int)region.Id, 17);
-                    if (diseaseRisk >= 0.2f && roll < 0.35f + diseaseRisk)
+                    float roll = Hash01(world.RandomSeed, day, (int)region.Id, 3);
+                    if (roll < config.NaturalDisasterChancePerDay)
                     {
-                        list.Add(new RegionEvent
-                        {
-                            EventId = $"fc_disease_{region.Id}_{day}",
-                            EventType = SimEventType.DiseaseOutbreak,
-                            RegionId = region.Id,
-                            StartDay = day,
-                            Duration = 30,
-                            Severity = Mathf.Clamp01(0.5f + diseaseRisk)
-                        });
-                    }
-
-                    float roll2 = Hash01(seed, day, (int)region.Id, 91);
-                    if (foodRisk > 0.2f && roll2 < foodRisk)
-                    {
-                        list.Add(new RegionEvent
-                        {
-                            EventId = $"fc_food_{region.Id}_{day}",
-                            EventType = SimEventType.FoodShortage,
-                            RegionId = region.Id,
-                            StartDay = day,
-                            Duration = 20,
-                            Severity = 0.7f
-                        });
-                    }
-
-                    float roll3 = Hash01(seed, day, (int)region.Id, 3);
-                    if (roll3 < 0.04f)
-                    {
+                        float severity = 0.8f + Hash01(world.RandomSeed, day, (int)region.Id, 7) * 0.4f;
                         list.Add(new RegionEvent
                         {
                             EventId = $"fc_disaster_{region.Id}_{day}",
                             EventType = SimEventType.NaturalDisaster,
                             RegionId = region.Id,
+                            Scope = SimEventScope.Regional,
                             StartDay = day,
-                            Duration = 15,
-                            Severity = 0.8f + roll3
+                            Duration = config.NaturalDisasterDuration,
+                            Severity = severity
                         });
                     }
                 }
@@ -131,11 +171,16 @@ namespace DivineWorld.Simulation.Systems
                 return;
             }
 
-            Upsert(region, world, type, duration, severity);
+            Upsert(region, world, type, duration, severity, SimEventScope.Regional);
         }
 
-        static void Upsert(RegionState region, WorldState world, SimEventType type, int duration, float severity)
+        static void Upsert(RegionState region, WorldState world, SimEventType type, int duration, float severity, SimEventScope scope)
         {
+            if (region.ActiveEvents == null)
+            {
+                region.ActiveEvents = new List<RegionEvent>();
+            }
+
             for (int i = 0; i < region.ActiveEvents.Count; i++)
             {
                 if (region.ActiveEvents[i].EventType == type && region.ActiveEvents[i].IsActiveOn(world.TotalDays))
@@ -151,14 +196,38 @@ namespace DivineWorld.Simulation.Systems
                 EventId = $"{type}_{region.Id}_{world.TotalDays}",
                 EventType = type,
                 RegionId = region.Id,
+                Scope = scope,
                 StartDay = world.TotalDays,
                 Duration = duration,
                 Severity = severity
             });
         }
 
+        static RegionEvent FindActive(RegionState region, SimEventType type, int totalDay)
+        {
+            if (region.ActiveEvents == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < region.ActiveEvents.Count; i++)
+            {
+                if (region.ActiveEvents[i].EventType == type && region.ActiveEvents[i].IsActiveOn(totalDay))
+                {
+                    return region.ActiveEvents[i];
+                }
+            }
+
+            return null;
+        }
+
         static void ExpireFinished(RegionState region, int totalDay)
         {
+            if (region.ActiveEvents == null)
+            {
+                return;
+            }
+
             region.ActiveEvents.RemoveAll(e => !e.IsActiveOn(totalDay));
         }
 
@@ -173,7 +242,12 @@ namespace DivineWorld.Simulation.Systems
             for (int i = 0; i < region.ActiveEvents.Count; i++)
             {
                 if (i > 0) sb.Append(" · ");
-                sb.Append(Label(region.ActiveEvents[i].EventType));
+                var e = region.ActiveEvents[i];
+                sb.Append(Label(e.EventType));
+                if (e.Scope == SimEventScope.Global)
+                {
+                    sb.Append("[G]");
+                }
             }
 
             return sb.ToString();
@@ -197,13 +271,12 @@ namespace DivineWorld.Simulation.Systems
         {
             unchecked
             {
-                // 2654435761 does not fit in int; keep hash math in uint then cast back.
-                uint h = (uint)seed;
-                h = h * 73856093u ^ (uint)day * 19349663u;
-                h = h * 83492791u ^ (uint)region * 50331653u;
-                h = h * 2654435761u ^ (uint)salt;
-                h &= 0x7fffffffu;
-                return (h % 10000u) / 10000f;
+                int h = seed;
+                h = h * 73856093 ^ day * 19349663;
+                h = h * 83492791 ^ region * 50331653;
+                h = (int)(h * 2654435761u) ^ salt;
+                h &= 0x7fffffff;
+                return (h % 10000) / 10000f;
             }
         }
     }

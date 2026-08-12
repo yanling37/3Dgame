@@ -36,7 +36,7 @@ namespace DivineWorld.Simulation.Systems
             world.TotalDays++;
 
             bool yearTurned = false;
-            if (world.DayOfYear > WorldState.DaysPerYear)
+            if (world.DayOfYear > SimulationConfig.DaysPerYear)
             {
                 world.DayOfYear = 1;
                 world.Year++;

@@ -28,6 +28,7 @@ namespace DivineWorld.Simulation.Data
         public string EventId;
         public SimEventType EventType;
         public RegionId RegionId;
+        public SimEventScope Scope = SimEventScope.Regional;
         public int StartDay;
         public int Duration;
         public float Severity = 1f;
@@ -52,46 +53,36 @@ namespace DivineWorld.Simulation.Data
         public float[] Resources = new float[7];
 
         /// <summary>
-        /// Independent production capacity per resource. Must NOT be derived from current stock
-        /// (avoids food→production positive feedback).
+        /// Independent production capacity per resource. Must NOT be derived from current stock.
         /// </summary>
         public float[] ProductionCapacity = new float[7];
 
-        /// <summary>Base water storage capacity for this region (before seasonal modifier).</summary>
         public float BaseWaterStorageCapacity = 10000f;
-
-        /// <summary>Base land/environment carrying capacity for population model.</summary>
         public float LandCarryingCapacity = 50000f;
-
         public bool IsSeaRegion;
 
+        /// <summary>Stability is not a 0..1 percent; values above 1 are valid.</summary>
         public float Stability = 1f;
         public float Education = 0.3f;
         public float FaithLevel = 0.3f;
         public float DiseasePressure;
         public float WeatherFactor = 1f;
         public string LastEvent = "平静";
-        public float PopulationDelta; // for map trend (approx daily change)
+        public float PopulationDelta;
         public List<RegionEvent> ActiveEvents = new List<RegionEvent>();
 
-        /// <summary>Region-specific observer influence (independent per region).</summary>
         public RegionObserverInfluence Influence = new RegionObserverInfluence();
 
-        /// <summary>Last computed carrying capacity (debug / UI).</summary>
         public float LastCarryingCapacity;
-
-        /// <summary>Last water capacity after seasonal modifier (debug / UI).</summary>
         public float LastWaterCapacity;
-
-        /// <summary>Last food spoilage applied (debug / tests).</summary>
         public float LastFoodSpoilage;
-
-        /// <summary>Last food production applied (debug / tests).</summary>
         public float LastFoodProduction;
-
-        /// <summary>Last natural + disease death pressure diagnostics.</summary>
+        public float LastWaterFactor = 1f;
+        public float LastFoodReserveDays;
         public float LastNaturalDeath;
         public float LastDiseaseDeath;
+        public float LastAgriculturalWaterUsed;
+        public float LastLivingWaterUsed;
 
         public float Get(ResourceId id) => Resources[(int)id];
 
@@ -119,6 +110,44 @@ namespace DivineWorld.Simulation.Data
             ProductionCapacity[(int)id] = Mathf.Max(0f, value);
         }
 
+        public bool HasActiveEvent(SimEventType type, int totalDay)
+        {
+            if (ActiveEvents == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < ActiveEvents.Count; i++)
+            {
+                if (ActiveEvents[i].EventType == type && ActiveEvents[i].IsActiveOn(totalDay))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public float GetActiveEventSeverity(SimEventType type, int totalDay)
+        {
+            float severity = 0f;
+            if (ActiveEvents == null)
+            {
+                return 0f;
+            }
+
+            for (int i = 0; i < ActiveEvents.Count; i++)
+            {
+                var e = ActiveEvents[i];
+                if (e.EventType == type && e.IsActiveOn(totalDay))
+                {
+                    severity = Mathf.Max(severity, e.Severity);
+                }
+            }
+
+            return severity;
+        }
+
         public RegionState Clone()
         {
             var copy = new RegionState
@@ -144,8 +173,12 @@ namespace DivineWorld.Simulation.Data
                 LastWaterCapacity = LastWaterCapacity,
                 LastFoodSpoilage = LastFoodSpoilage,
                 LastFoodProduction = LastFoodProduction,
+                LastWaterFactor = LastWaterFactor,
+                LastFoodReserveDays = LastFoodReserveDays,
                 LastNaturalDeath = LastNaturalDeath,
                 LastDiseaseDeath = LastDiseaseDeath,
+                LastAgriculturalWaterUsed = LastAgriculturalWaterUsed,
+                LastLivingWaterUsed = LastLivingWaterUsed,
                 ActiveEvents = new List<RegionEvent>()
             };
 
@@ -158,6 +191,7 @@ namespace DivineWorld.Simulation.Data
                         EventId = e.EventId,
                         EventType = e.EventType,
                         RegionId = e.RegionId,
+                        Scope = e.Scope,
                         StartDay = e.StartDay,
                         Duration = e.Duration,
                         Severity = e.Severity
@@ -172,42 +206,41 @@ namespace DivineWorld.Simulation.Data
     [Serializable]
     public class WorldState
     {
-        public const int DaysPerYear = 360;
-        public const int DaysPerSeason = 90;
-
         public string WorldName = "初始大陆与近海";
         public int Year = 1;
         public int DayOfYear = 1;
         public int TotalDays;
         public SeasonId CurrentSeason = SeasonId.Spring;
+        public int SeasonIndex;
         public RegionState[] Regions = Array.Empty<RegionState>();
         public float GlobalChaos;
-        public int RandomSeed;
+        public int RandomSeed = 20260810;
+        public bool HaltedOnNumericError;
+        public string LastNumericError;
 
         public int CurrentYear => Year;
-
-        public int SeasonIndex => (int)CurrentSeason;
 
         public int DayInSeason
         {
             get
             {
-                int day = Mathf.Clamp(DayOfYear, 1, DaysPerYear);
-                return ((day - 1) % DaysPerSeason) + 1;
+                int day = Mathf.Clamp(DayOfYear, 1, SimulationConfig.DaysPerYear);
+                return ((day - 1) % SimulationConfig.DaysPerSeason) + 1;
             }
         }
 
-        public float SeasonProgress => (DayInSeason - 1) / (float)DaysPerSeason;
+        public float SeasonProgress
+        {
+            get
+            {
+                return (DayInSeason - 1) / (float)SimulationConfig.DaysPerSeason;
+            }
+        }
 
         public static SeasonId SeasonFromDayOfYear(int dayOfYear)
         {
-            int day = dayOfYear;
-            if (day < 1)
-            {
-                day = 1;
-            }
-
-            int normalized = ((day - 1) % DaysPerYear) + 1;
+            int day = dayOfYear < 1 ? 1 : dayOfYear;
+            int normalized = ((day - 1) % SimulationConfig.DaysPerYear) + 1;
             if (normalized <= 90) return SeasonId.Spring;
             if (normalized <= 180) return SeasonId.Summer;
             if (normalized <= 270) return SeasonId.Autumn;
@@ -217,6 +250,7 @@ namespace DivineWorld.Simulation.Data
         public void SyncSeasonFromDay()
         {
             CurrentSeason = SeasonFromDayOfYear(DayOfYear);
+            SeasonIndex = (int)CurrentSeason;
         }
 
         public WorldState Clone()
@@ -228,8 +262,11 @@ namespace DivineWorld.Simulation.Data
                 DayOfYear = DayOfYear,
                 TotalDays = TotalDays,
                 CurrentSeason = CurrentSeason,
+                SeasonIndex = SeasonIndex,
                 GlobalChaos = GlobalChaos,
                 RandomSeed = RandomSeed,
+                HaltedOnNumericError = HaltedOnNumericError,
+                LastNumericError = LastNumericError,
                 Regions = new RegionState[Regions != null ? Regions.Length : 0]
             };
 
