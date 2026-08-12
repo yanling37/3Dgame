@@ -4,18 +4,47 @@ using UnityEngine;
 namespace DivineWorld.Simulation.Systems
 {
     /// <summary>
-    /// Formal season clock: 360-day year, 4×90-day seasons.
-    /// Season drives baselines; WeatherFactor wanders inside seasonal range.
+    /// Formal season clock: 360-day year, 4×90-day seasons driven by DayOfYear.
     /// </summary>
     public static class SeasonSystem
     {
+        /// <summary>Alias used by DailySimulation — sync season from calendar day.</summary>
+        public static void UpdateSeason(WorldState world) => SyncFromCalendar(world);
+
         public static void SyncFromCalendar(WorldState world)
         {
-            int dayIndex = Mathf.Clamp(world.DayOfYear - 1, 0, WorldState.DaysPerYear - 1);
-            world.SeasonIndex = dayIndex / WorldState.DaysPerSeason;
-            world.CurrentSeason = (SeasonId)world.SeasonIndex;
-            int dayInSeason = dayIndex % WorldState.DaysPerSeason;
-            world.SeasonProgress = dayInSeason / (float)WorldState.DaysPerSeason;
+            if (world == null)
+            {
+                return;
+            }
+
+            world.SyncSeasonFromDay();
+        }
+
+        /// <summary>
+        /// Advances one calendar day. Returns true when the year rolls over.
+        /// Does not apply year-turn events — caller should invoke EventSystem.ApplyYearTurn.
+        /// </summary>
+        public static bool AdvanceCalendar(WorldState world)
+        {
+            if (world == null)
+            {
+                return false;
+            }
+
+            world.DayOfYear++;
+            world.TotalDays++;
+
+            bool yearTurned = false;
+            if (world.DayOfYear > WorldState.DaysPerYear)
+            {
+                world.DayOfYear = 1;
+                world.Year++;
+                yearTurned = true;
+            }
+
+            world.SyncSeasonFromDay();
+            return yearTurned;
         }
 
         public static string DisplayName(SeasonId season)
@@ -32,70 +61,25 @@ namespace DivineWorld.Simulation.Systems
 
         public static void GetWeatherRange(SeasonId season, out float min, out float max)
         {
-            switch (season)
-            {
-                case SeasonId.Spring:
-                    min = 0.85f; max = 1.2f; break;
-                case SeasonId.Summer:
-                    min = 0.95f; max = 1.35f; break;
-                case SeasonId.Autumn:
-                    min = 0.8f; max = 1.15f; break;
-                case SeasonId.Winter:
-                    min = 0.55f; max = 0.95f; break;
-                default:
-                    min = 0.6f; max = 1.3f; break;
-            }
+            var config = SimulationConfig.CreateDefault();
+            config.GetWeatherRange(season, out _, out min, out max);
         }
 
         public static float WeatherBaseline(SeasonId season)
         {
-            GetWeatherRange(season, out float min, out float max);
-            return (min + max) * 0.5f;
-        }
-
-        public static float BirthModifier(SeasonId season)
-        {
-            switch (season)
-            {
-                case SeasonId.Spring: return 1.15f;
-                case SeasonId.Summer: return 1.05f;
-                case SeasonId.Autumn: return 0.95f;
-                case SeasonId.Winter: return 0.8f;
-                default: return 1f;
-            }
+            var config = SimulationConfig.CreateDefault();
+            config.GetWeatherRange(season, out float baseline, out _, out _);
+            return baseline;
         }
 
         public static float DeathModifier(SeasonId season)
         {
-            switch (season)
-            {
-                case SeasonId.Spring: return 0.95f;
-                case SeasonId.Summer: return 1.0f;
-                case SeasonId.Autumn: return 1.05f;
-                case SeasonId.Winter: return 1.25f;
-                default: return 1f;
-            }
+            return SimulationConfig.CreateDefault().DeathModifier(season);
         }
 
         public static float DiseaseModifier(SeasonId season)
         {
-            switch (season)
-            {
-                case SeasonId.Spring: return 0.9f;
-                case SeasonId.Summer: return 1.15f;
-                case SeasonId.Autumn: return 1.0f;
-                case SeasonId.Winter: return 1.2f;
-                default: return 1f;
-            }
-        }
-
-        public static void TickWeather(RegionState region, SeasonId season, System.Random rng)
-        {
-            GetWeatherRange(season, out float min, out float max);
-            region.WeatherFactor = Mathf.Clamp(
-                region.WeatherFactor + ((float)rng.NextDouble() - 0.5f) * 0.02f,
-                min,
-                max);
+            return SimulationConfig.CreateDefault().DiseaseModifier(season);
         }
     }
 }

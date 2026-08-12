@@ -20,24 +20,33 @@ namespace DivineWorld.Simulation.Systems
         public static Result FastForwardYears(
             WorldState source,
             RaceDefinition[] races,
+            SimulationConfig config,
             ObserverInfluence influence,
             int years,
             int seed)
         {
             int targetDay = source.TotalDays + years * WorldState.DaysPerYear;
-            return FastForwardToTotalDay(source, races, influence, targetDay, seed);
+            return FastForwardToTotalDay(source, races, config, influence, targetDay, seed);
         }
 
         public static Result FastForwardToTotalDay(
             WorldState source,
             RaceDefinition[] races,
+            SimulationConfig config,
             ObserverInfluence influence,
             int targetTotalDay,
             int seed)
         {
+            config = config ?? SimulationConfig.CreateDefault();
             var state = source.Clone();
             state.RandomSeed = seed;
             SeasonSystem.SyncFromCalendar(state);
+            // Ensure HUD scratch values are applied to region Influence before projection.
+            if (influence != null)
+            {
+                influence.Bind(state);
+                influence.PushToFocus();
+            }
 
             int breakpoints = 0;
             var log = new System.Text.StringBuilder();
@@ -68,14 +77,14 @@ namespace DivineWorld.Simulation.Systems
                 if (nextBreak > 0)
                 {
                     int daysToBreak = nextBreak - state.TotalDays;
-                    ProjectDays(state, races, influence, daysToBreak);
-                    ApplyBreakpoint(state, races, breakEvt);
+                    ProjectDays(state, races, config, daysToBreak);
+                    ApplyBreakpoint(state, breakEvt);
                     breakpoints++;
                     log.AppendLine($"breakpoint day={nextBreak} {breakEvt.EventType} @ {breakEvt.RegionId}");
                 }
                 else
                 {
-                    ProjectDays(state, races, influence, chunk);
+                    ProjectDays(state, races, config, chunk);
                 }
             }
 
@@ -83,13 +92,10 @@ namespace DivineWorld.Simulation.Systems
             return new Result { State = state, BreakpointsApplied = breakpoints, Log = log.ToString() };
         }
 
-        /// <summary>
-        /// Macro-project an arbitrary day count by splitting into season-aligned pieces.
-        /// </summary>
         public static void ProjectDays(
             WorldState state,
             RaceDefinition[] races,
-            ObserverInfluence influence,
+            SimulationConfig config,
             int days)
         {
             int left = days;
@@ -99,7 +105,7 @@ namespace DivineWorld.Simulation.Systems
                 int seasonDaysLeft = WorldState.DaysPerSeason
                     - ((Mathf.Max(0, state.DayOfYear - 1)) % WorldState.DaysPerSeason);
                 int step = Mathf.Min(left, Mathf.Max(1, seasonDaysLeft));
-                ProjectSeasonChunk(state, races, influence, step);
+                ProjectSeasonChunk(state, races, config, step);
                 left -= step;
             }
         }
@@ -107,7 +113,7 @@ namespace DivineWorld.Simulation.Systems
         static void ProjectSeasonChunk(
             WorldState state,
             RaceDefinition[] races,
-            ObserverInfluence influence,
+            SimulationConfig config,
             int days)
         {
             SeasonSystem.SyncFromCalendar(state);
@@ -119,37 +125,32 @@ namespace DivineWorld.Simulation.Systems
                 var race = RegionLookup.FindRace(races, region.DominantRace);
                 region.WeatherFactor = weather;
 
-                float labor = Mathf.Clamp(region.Population / 10000f, 0.2f, 8f);
-                float tech = 0.6f + region.Education * 0.8f;
-                float harvest = influence.RegionMultiplier(region.Id, influence.HarvestBlessing);
+                float labor = Mathf.Clamp(region.Population / config.LaborDivisor, config.LaborMin, config.LaborMax);
+                float tech = config.TechBase + region.Education * config.TechFromEducation;
+                float harvest = region.Influence?.HarvestBlessing ?? 1f;
 
-                // Resources: integrate daily rates over `days` (stable-state clamp for perishables).
-                foreach (var def in ResourceCatalog.All)
-                {
-                    float prod = ResourceSystem.EstimateDailyProduction(
-                        region, race, def, season, labor, tech, weather, harvest);
-                    float consume = def.BaseConsumePerCapita * region.Population;
-                    float spoilRate = def.CanSpoil ? def.BaseSpoilRate : 0f;
+                ProjectResource(region, ResourceId.Food, race, season, config, labor, tech, weather, harvest, days,
+                    config.FoodNeedPerCapita * region.Population,
+                    config.FoodBaseSpoilageRate * config.FoodSpoilageModifier(season),
+                    float.MaxValue);
 
-                    if (def.CanSpoil && spoilRate > 0f)
-                    {
-                        // Continuous approx: dS/dt = P - C - s*S → S_inf = (P-C)/s
-                        float net = prod - consume;
-                        float sInf = net <= 0f ? 0f : net / spoilRate;
-                        float s0 = region.Get(def.Id);
-                        float s1 = sInf + (s0 - sInf) * Mathf.Exp(-spoilRate * days);
-                        region.Set(def.Id, Mathf.Max(0f, s1));
-                    }
-                    else
-                    {
-                        region.Add(def.Id, (prod - consume) * days);
-                    }
-                }
+                float waterCap = ResourceSystem.GetWaterCapacity(region, season, config);
+                region.LastWaterCapacity = waterCap;
+                ProjectResource(region, ResourceId.Water, race, season, config, labor, tech, weather, harvest, days,
+                    config.WaterNeedPerCapita * region.Population,
+                    0f,
+                    waterCap);
 
-                // Population logistic with carrying capacity.
-                float r = PopulationSystem.EstimateDailyNetGrowthRate(region, race, influence, season);
-                float K = ResourceSystem.EstimateCarryingCapacity(region, race, season);
-                float p0 = Mathf.Max(100f, region.Population);
+                ProjectResource(region, ResourceId.Timber, race, season, config, labor, tech, weather, harvest, days, 0f, 0f, float.MaxValue);
+                ProjectResource(region, ResourceId.Ore, race, season, config, labor, tech, weather, harvest, days, 0f, 0f, float.MaxValue);
+                ProjectResource(region, ResourceId.Faith, race, season, config, labor, tech, weather, harvest, days, 0f, 0f, float.MaxValue);
+                ProjectResource(region, ResourceId.Knowledge, race, season, config, labor, tech, weather, harvest, days, 0f, 0f, float.MaxValue);
+                ProjectResource(region, ResourceId.Magic, race, season, config, labor, tech, weather, harvest, days, 0f, 0f, float.MaxValue);
+
+                float r = PopulationSystem.EstimateDailyNetGrowthRate(region, race, season, config);
+                float K = PopulationSystem.CalculateCarryingCapacity(region, race, season, config);
+                region.LastCarryingCapacity = K;
+                float p0 = Mathf.Max(config.MinPopulation, region.Population);
                 float p1;
                 if (Mathf.Abs(r) < 1e-8f)
                 {
@@ -157,17 +158,15 @@ namespace DivineWorld.Simulation.Systems
                 }
                 else
                 {
-                    // Discrete logistic: P' = P + r*P*(1-P/K)*days  with soft clamp
                     float growth = r * p0 * (1f - p0 / Mathf.Max(1f, K)) * days;
-                    p1 = Mathf.Max(100f, p0 + growth);
+                    p1 = Mathf.Max(config.MinPopulation, p0 + growth);
                 }
 
                 region.PopulationDelta = (p1 - p0) / Mathf.Max(1, days);
                 region.Population = p1;
 
-                // Soft disease drift toward seasonal pressure.
                 float diseaseTarget = Mathf.Clamp01(region.DiseasePressure * 0.7f + (1f - SeasonSystem.DiseaseModifier(season) + 1f) * 0.05f);
-                if (region.Get(ResourceId.Food) < region.Population * 0.25f)
+                if (region.Get(ResourceId.Food) < region.Population * config.FoodShortageRatio)
                 {
                     diseaseTarget = Mathf.Max(diseaseTarget, 0.2f);
                 }
@@ -176,24 +175,56 @@ namespace DivineWorld.Simulation.Systems
 
                 float knowledge = region.Get(ResourceId.Knowledge);
                 float faith = region.Get(ResourceId.Faith);
-                float eduT = Mathf.Clamp01(knowledge / 20000f);
-                float faithT = Mathf.Clamp01(faith / 25000f);
-                float t = 1f - Mathf.Pow(1f - 0.002f, days);
+                float eduT = Mathf.Clamp01(knowledge / config.KnowledgeEducationDivisor);
+                float faithT = Mathf.Clamp01(faith / config.FaithLevelDivisor);
+                float t = 1f - Mathf.Pow(1f - config.EducationLerp, days);
                 region.Education = Mathf.Clamp01(Mathf.Lerp(region.Education, eduT, t));
                 region.FaithLevel = Mathf.Clamp01(Mathf.Lerp(region.FaithLevel, faithT, t));
 
-                if (region.Get(ResourceId.Food) < region.Population * 0.2f)
+                if (region.Get(ResourceId.Food) < region.Population * config.FoodShortageRatio)
                 {
-                    region.Stability = Mathf.Max(0.05f, region.Stability - 0.004f * days * 0.35f);
+                    region.Stability = Mathf.Max(0.05f, region.Stability - config.FoodShortageStabilityLoss * days * 0.35f);
                 }
-                else if (region.Get(ResourceId.Food) > region.Population * 0.8f)
+                else if (region.Get(ResourceId.Food) > region.Population * config.FoodSurplusRatio)
                 {
-                    region.Stability = Mathf.Min(1.5f, region.Stability + 0.0015f * days * 0.35f);
+                    float stabMul = region.Influence?.StabilityBlessing ?? 1f;
+                    region.Stability = Mathf.Min(1.5f, region.Stability + config.FoodSurplusStabilityGain * stabMul * days * 0.35f);
                 }
             }
 
             AdvanceCalendar(state, days);
             SeasonSystem.SyncFromCalendar(state);
+        }
+
+        static void ProjectResource(
+            RegionState region,
+            ResourceId id,
+            RaceDefinition race,
+            SeasonId season,
+            SimulationConfig config,
+            float labor,
+            float tech,
+            float env,
+            float harvest,
+            int days,
+            float consumePerDay,
+            float spoilRate,
+            float capacity)
+        {
+            float prod = ResourceSystem.EstimateDailyProduction(region, race, id, season, config, labor, tech, env, harvest);
+            if (spoilRate > 0f)
+            {
+                float net = prod - consumePerDay;
+                float sInf = net <= 0f ? 0f : net / spoilRate;
+                float s0 = region.Get(id);
+                float s1 = sInf + (s0 - sInf) * Mathf.Exp(-spoilRate * days);
+                region.Set(id, Mathf.Min(capacity, Mathf.Max(0f, s1)));
+            }
+            else
+            {
+                float next = region.Get(id) + (prod - consumePerDay) * days;
+                region.Set(id, Mathf.Min(capacity, Mathf.Max(0f, next)));
+            }
         }
 
         static void AdvanceCalendar(WorldState state, int days)
@@ -207,7 +238,7 @@ namespace DivineWorld.Simulation.Systems
             }
         }
 
-        static void ApplyBreakpoint(WorldState state, RaceDefinition[] races, RegionEvent evt)
+        static void ApplyBreakpoint(WorldState state, RegionEvent evt)
         {
             for (int i = 0; i < state.Regions.Length; i++)
             {

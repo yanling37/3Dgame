@@ -1,4 +1,5 @@
 using System.Text;
+using DivineWorld.Simulation.Core;
 using DivineWorld.Simulation.Data;
 using DivineWorld.Simulation.Player;
 using DivineWorld.Simulation.Systems;
@@ -30,20 +31,31 @@ namespace DivineWorld.Simulation.Testing
             public string Text;
         }
 
-        public static Report RunOneYear(WorldState initial, RaceDefinition[] races, ObserverInfluence influence, int seed)
+        public static Report RunOneYear(
+            WorldState initial,
+            RaceDefinition[] races,
+            SimulationConfig config,
+            ObserverInfluence influence,
+            int seed)
         {
+            config = config ?? SimulationConfig.CreateDefault();
             var dailyWorld = initial.Clone();
             dailyWorld.RandomSeed = seed;
             SeasonSystem.SyncFromCalendar(dailyWorld);
             var rng = new System.Random(seed);
-            var dailyInf = CloneInfluence(influence);
+
+            if (influence != null)
+            {
+                influence.Bind(dailyWorld);
+                influence.PushToFocus();
+            }
 
             for (int d = 0; d < WorldState.DaysPerYear; d++)
             {
-                TickOneDay(dailyWorld, races, dailyInf, rng);
+                TickOneDay(dailyWorld, races, config, rng);
             }
 
-            var fast = FastForwardSystem.FastForwardYears(initial, races, influence, 1, seed);
+            var fast = FastForwardSystem.FastForwardYears(initial, races, config, influence, 1, seed);
 
             var metrics = BuildMetrics(dailyWorld, fast.State);
             bool ok = true;
@@ -65,22 +77,12 @@ namespace DivineWorld.Simulation.Testing
             return new Report { Metrics = metrics, WithinSoftThresholds = ok, Text = sb.ToString() };
         }
 
-        public static void TickOneDay(WorldState state, RaceDefinition[] races, ObserverInfluence influence, System.Random rng)
+        public static void TickOneDay(WorldState state, RaceDefinition[] races, SimulationConfig config, System.Random rng)
         {
-            SeasonSystem.SyncFromCalendar(state);
-            foreach (var region in state.Regions)
+            DailySimulation.SimulateDay(state, races, config, rng);
+            bool yearTurned = SeasonSystem.AdvanceCalendar(state);
+            if (yearTurned)
             {
-                var race = RegionLookup.FindRace(races, region.DominantRace);
-                ResourceSystem.TickDay(region, race, influence, state.CurrentSeason, rng);
-                PopulationSystem.TickDay(region, race, influence, state.CurrentSeason, rng);
-            }
-
-            state.DayOfYear++;
-            state.TotalDays++;
-            if (state.DayOfYear > WorldState.DaysPerYear)
-            {
-                state.DayOfYear = 1;
-                state.Year++;
                 EventSystem.ApplyYearTurn(state);
             }
 
@@ -137,18 +139,6 @@ namespace DivineWorld.Simulation.Testing
                 Fast = fast,
                 AbsDiff = abs,
                 ErrorPct = abs / denom
-            };
-        }
-
-        static ObserverInfluence CloneInfluence(ObserverInfluence src)
-        {
-            return new ObserverInfluence
-            {
-                FertilityBlessing = src.FertilityBlessing,
-                HarvestBlessing = src.HarvestBlessing,
-                DiseaseCurse = src.DiseaseCurse,
-                StabilityBlessing = src.StabilityBlessing,
-                FocusRegion = src.FocusRegion
             };
         }
     }

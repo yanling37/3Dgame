@@ -42,4 +42,17 @@ namespace DivineWorld.Simulation.Data
         YearTurn = 5,
         NaturalDisaster = 6
     }
+
+    /// <summary>
+    /// Resource lifecycle rules used by the data-driven resource engine.
+    /// </summary>
+    public enum ResourceLifecycle
+    {
+        /// <summary>Stock + production - consumption - spoilage (e.g. Food).</summary>
+        Perishable = 0,
+        /// <summary>Stock + production - consumption, no time spoilage (e.g. Magic).</summary>
+        Persistent = 1,
+        /// <summary>Stock capped by region capacity (e.g. Water).</summary>
+        CapacityLimited = 2
+    }
 }

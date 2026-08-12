@@ -5,31 +5,70 @@ using UnityEngine;
 namespace DivineWorld.Simulation.Player
 {
     /// <summary>
-    /// Phase 1 观察者微调。
-    /// 设计约束：只能改「概率/倍率」，不能直接把人口或力量写成固定值。
-    /// 1.0 = 无影响；&gt;1 加强对应效果；&lt;1 削弱。
-    /// HUD 滑条范围目前限制在约 0.7~1.3。
+    /// Per-region observer nudges. Regions hold independent values.
+    /// </summary>
+    [Serializable]
+    public class RegionObserverInfluence
+    {
+        [Range(0.5f, 1.5f)] public float FertilityBlessing = 1f;
+        [Range(0.5f, 1.5f)] public float HarvestBlessing = 1f;
+        /// <summary>Multiplier on disease pressure / disease death (&gt;1 worsens).</summary>
+        [Range(0.5f, 1.5f)] public float DiseasePressure = 1f;
+        [Range(0.5f, 1.5f)] public float StabilityBlessing = 1f;
+
+        public void ResetSoft()
+        {
+            FertilityBlessing = 1f;
+            HarvestBlessing = 1f;
+            DiseasePressure = 1f;
+            StabilityBlessing = 1f;
+        }
+
+        public void CopyFrom(RegionObserverInfluence other)
+        {
+            if (other == null)
+            {
+                return;
+            }
+
+            FertilityBlessing = other.FertilityBlessing;
+            HarvestBlessing = other.HarvestBlessing;
+            DiseasePressure = other.DiseasePressure;
+            StabilityBlessing = other.StabilityBlessing;
+        }
+
+        public RegionObserverInfluence Clone()
+        {
+            var copy = new RegionObserverInfluence();
+            copy.CopyFrom(this);
+            return copy;
+        }
+    }
+
+    /// <summary>
+    /// World-facing observer API for HUD.
+    /// Underlying storage is region-specific on <see cref="RegionState.Influence"/>.
+    /// Focused edits write the focused region; global focus writes all regions equally.
+    /// DiseaseCurse is the HUD alias for per-region DiseasePressure.
     /// </summary>
     [Serializable]
     public class ObserverInfluence
     {
-        [Tooltip("乘在日生育率上。1=默认，>1 更容易涨人口。")]
+        public RegionId? FocusRegion;
+
+        /// <summary>Scratch values mirrored from the active focus target for HUD sliders.</summary>
         [Range(0.5f, 1.5f)] public float FertilityBlessing = 1f;
-
-        [Tooltip("乘在粮食产量上。1=默认，>1 收成更好。")]
         [Range(0.5f, 1.5f)] public float HarvestBlessing = 1f;
-
-        [Tooltip("乘在疫病压力增长与疫病死亡上。>1 更糟，<1 更缓解。")]
         [Range(0.5f, 1.5f)] public float DiseaseCurse = 1f;
-
-        [Tooltip("乘在粮仓富余时的稳定回升速度上。")]
         [Range(0.5f, 1.5f)] public float StabilityBlessing = 1f;
 
-        /// <summary>
-        /// 注视焦点地区。null = 全域同等生效。
-        /// 有焦点时：焦点地区吃满倍率，其他地区只吃 30%（见 RegionMultiplier）。
-        /// </summary>
-        public RegionId? FocusRegion;
+        WorldState _boundWorld;
+
+        public void Bind(WorldState world)
+        {
+            _boundWorld = world;
+            PullFromFocus();
+        }
 
         public void ResetSoft()
         {
@@ -37,22 +76,127 @@ namespace DivineWorld.Simulation.Player
             HarvestBlessing = 1f;
             DiseaseCurse = 1f;
             StabilityBlessing = 1f;
+            PushToFocus();
+        }
+
+        public RegionObserverInfluence GetRegionInfluence(RegionId regionId)
+        {
+            var region = FindRegion(regionId);
+            return region != null ? region.Influence : new RegionObserverInfluence();
+        }
+
+        public void SetRegionInfluence(RegionId regionId, RegionObserverInfluence values)
+        {
+            var region = FindRegion(regionId);
+            if (region == null || values == null)
+            {
+                return;
+            }
+
+            region.Influence.CopyFrom(values);
+            if (!FocusRegion.HasValue || FocusRegion.Value == regionId)
+            {
+                PullFromFocus();
+            }
         }
 
         /// <summary>
-        /// 把某个微调倍率映射到具体地区。
-        /// 调试「为什么海没怎么涨」时：先看 FocusRegion 是不是教廷/帝国。
+        /// Resolve effective influence for a region. Values are region-local (no global bleed in P2-A).
         /// </summary>
-        public float RegionMultiplier(RegionId region, float value)
+        public RegionObserverInfluence Resolve(RegionState region)
         {
-            if (FocusRegion.HasValue && FocusRegion.Value != region)
+            if (region?.Influence == null)
             {
-                // 非焦点地区：在 1.0 与目标倍率之间按 0.3 插值
-                // 例：祝福=1.3 → 非焦点得到 1.09
-                return Mathf.Lerp(1f, value, 0.3f);
+                return new RegionObserverInfluence();
             }
 
-            return value;
+            return region.Influence;
+        }
+
+        /// <summary>HUD helper: write current slider fields into the focused region(s).</summary>
+        public void PushToFocus()
+        {
+            if (_boundWorld?.Regions == null)
+            {
+                return;
+            }
+
+            if (FocusRegion.HasValue)
+            {
+                ApplyToRegion(FindRegion(FocusRegion.Value));
+                return;
+            }
+
+            foreach (var region in _boundWorld.Regions)
+            {
+                ApplyToRegion(region);
+            }
+        }
+
+        /// <summary>HUD helper: load slider fields from the focused region (or first region).</summary>
+        public void PullFromFocus()
+        {
+            if (_boundWorld?.Regions == null || _boundWorld.Regions.Length == 0)
+            {
+                return;
+            }
+
+            if (FocusRegion.HasValue)
+            {
+                var region = FindRegion(FocusRegion.Value);
+                if (region != null)
+                {
+                    MirrorFrom(region.Influence);
+                }
+
+                return;
+            }
+
+            MirrorFrom(_boundWorld.Regions[0].Influence);
+        }
+
+        void ApplyToRegion(RegionState region)
+        {
+            if (region?.Influence == null)
+            {
+                return;
+            }
+
+            region.Influence.FertilityBlessing = FertilityBlessing;
+            region.Influence.HarvestBlessing = HarvestBlessing;
+            region.Influence.DiseasePressure = DiseaseCurse;
+            region.Influence.StabilityBlessing = StabilityBlessing;
+        }
+
+        void MirrorFrom(RegionObserverInfluence source)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            FertilityBlessing = source.FertilityBlessing;
+            HarvestBlessing = source.HarvestBlessing;
+            DiseaseCurse = source.DiseasePressure;
+            StabilityBlessing = source.StabilityBlessing;
+        }
+
+        RegionState FindRegion(RegionId id)
+        {
+            if (_boundWorld?.Regions == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < _boundWorld.Regions.Length; i++)
+            {
+                if (_boundWorld.Regions[i].Id == id)
+                {
+                    return _boundWorld.Regions[i];
+                }
+            }
+
+            return null;
         }
     }
 }

@@ -7,6 +7,7 @@ namespace DivineWorld.Simulation
 {
     /// <summary>
     /// Spawns Phase 2 simulation runtime: world + HUD + map visualization.
+    /// Attach to any GameObject, or let Boot scene create it.
     /// </summary>
     public class SimulationBootstrap : MonoBehaviour
     {
@@ -36,7 +37,7 @@ namespace DivineWorld.Simulation
                 map.Bind(world);
             }
 
-            Debug.Log("[DivineWorld] Phase 2 simulation started (season / resources / events / map / fast-forward).");
+            Debug.Log("[DivineWorld] Phase 2 / 2-A simulation started (season / resources / population / events / map / fast-forward).");
         }
 
         void EnsureCamera()

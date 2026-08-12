@@ -5,7 +5,7 @@ using UnityEngine;
 namespace DivineWorld.Simulation.UI
 {
     /// <summary>
-    /// Observer HUD for Phase 2: season, fast-forward, consistency test.
+    /// Observer HUD for Phase 2: season, per-region influence, fast-forward, consistency test.
     /// </summary>
     public class WorldObserverHud : MonoBehaviour
     {
@@ -67,6 +67,7 @@ namespace DivineWorld.Simulation.UI
                 return;
             }
 
+            world.Influence?.PullFromFocus();
             _cachedReport = world.BuildStatusReport();
             _lastDay = world.State != null ? world.State.TotalDays : -1;
         }
@@ -80,7 +81,7 @@ namespace DivineWorld.Simulation.UI
 
             const float pad = 12f;
             var area = new Rect(pad, pad, Mathf.Min(560f, Screen.width - pad * 2f), Screen.height - pad * 2f);
-            GUI.Box(area, "Divine World · 观察仪 (Phase 2)");
+            GUI.Box(area, "Divine World · 观察仪 (Phase 2 / 2-A)");
 
             GUILayout.BeginArea(new Rect(area.x + 10, area.y + 28, area.width - 20, area.height - 36));
 
@@ -113,6 +114,12 @@ namespace DivineWorld.Simulation.UI
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
+            if (GUILayout.Button("+360日", GUILayout.Width(80)))
+            {
+                world.AdvanceDays(360);
+                Refresh();
+            }
+
             if (GUILayout.Button("重置世界", GUILayout.Width(80)))
             {
                 world.ResetWorld();
@@ -126,12 +133,17 @@ namespace DivineWorld.Simulation.UI
 
             GUILayout.EndHorizontal();
 
+            if (world.State != null)
+            {
+                GUILayout.Label($"季节 {world.CurrentSeason} | 年 {world.CurrentYear} | 第 {world.DayOfYear} 日 | 季内 {world.DayInSeason}/90");
+            }
+
             GUILayout.Space(6);
             GUILayout.Label("速度（秒/日）");
             world.SecondsPerDay = GUILayout.HorizontalSlider(world.SecondsPerDay, 0.05f, 1.5f);
 
             GUILayout.Space(8);
-            GUILayout.Label("注视地区（微调主要作用于此）");
+            GUILayout.Label("注视地区（微调写入该地区的独立 Influence）");
             GUILayout.BeginHorizontal();
             FocusBtn("全域", null);
             FocusBtn("教廷区", RegionId.Theocracy);
@@ -142,13 +154,25 @@ namespace DivineWorld.Simulation.UI
             var inf = world.Influence;
             GUILayout.Space(6);
             GUILayout.Label($"生育祝福 ×{inf.FertilityBlessing:0.00}");
-            inf.FertilityBlessing = GUILayout.HorizontalSlider(inf.FertilityBlessing, 0.7f, 1.3f);
+            float fert = GUILayout.HorizontalSlider(inf.FertilityBlessing, 0.7f, 1.3f);
             GUILayout.Label($"收成祝福 ×{inf.HarvestBlessing:0.00}");
-            inf.HarvestBlessing = GUILayout.HorizontalSlider(inf.HarvestBlessing, 0.7f, 1.3f);
+            float harvest = GUILayout.HorizontalSlider(inf.HarvestBlessing, 0.7f, 1.3f);
             GUILayout.Label($"疫病压力 ×{inf.DiseaseCurse:0.00}");
-            inf.DiseaseCurse = GUILayout.HorizontalSlider(inf.DiseaseCurse, 0.7f, 1.3f);
+            float disease = GUILayout.HorizontalSlider(inf.DiseaseCurse, 0.7f, 1.3f);
             GUILayout.Label($"稳定祝福 ×{inf.StabilityBlessing:0.00}");
-            inf.StabilityBlessing = GUILayout.HorizontalSlider(inf.StabilityBlessing, 0.7f, 1.3f);
+            float stability = GUILayout.HorizontalSlider(inf.StabilityBlessing, 0.7f, 1.3f);
+
+            if (!Mathf.Approximately(fert, inf.FertilityBlessing)
+                || !Mathf.Approximately(harvest, inf.HarvestBlessing)
+                || !Mathf.Approximately(disease, inf.DiseaseCurse)
+                || !Mathf.Approximately(stability, inf.StabilityBlessing))
+            {
+                inf.FertilityBlessing = fert;
+                inf.HarvestBlessing = harvest;
+                inf.DiseaseCurse = disease;
+                inf.StabilityBlessing = stability;
+                inf.PushToFocus();
+            }
 
             if (GUILayout.Button("清除微调", GUILayout.Width(100)))
             {
@@ -179,7 +203,9 @@ namespace DivineWorld.Simulation.UI
 
             if (GUILayout.Button(label, GUILayout.Height(28)))
             {
+                world.Influence.PushToFocus();
                 world.Influence.FocusRegion = region;
+                world.Influence.PullFromFocus();
             }
 
             GUI.backgroundColor = prev;

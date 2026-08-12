@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DivineWorld.Simulation.Player;
 using UnityEngine;
 
 namespace DivineWorld.Simulation.Data
@@ -46,7 +47,24 @@ namespace DivineWorld.Simulation.Data
         public string DisplayName;
         public RaceId DominantRace;
         public float Population;
+
+        /// <summary>Current resource stocks. Index by ResourceId.</summary>
         public float[] Resources = new float[7];
+
+        /// <summary>
+        /// Independent production capacity per resource. Must NOT be derived from current stock
+        /// (avoids food→production positive feedback).
+        /// </summary>
+        public float[] ProductionCapacity = new float[7];
+
+        /// <summary>Base water storage capacity for this region (before seasonal modifier).</summary>
+        public float BaseWaterStorageCapacity = 10000f;
+
+        /// <summary>Base land/environment carrying capacity for population model.</summary>
+        public float LandCarryingCapacity = 50000f;
+
+        public bool IsSeaRegion;
+
         public float Stability = 1f;
         public float Education = 0.3f;
         public float FaithLevel = 0.3f;
@@ -56,11 +74,50 @@ namespace DivineWorld.Simulation.Data
         public float PopulationDelta; // for map trend (approx daily change)
         public List<RegionEvent> ActiveEvents = new List<RegionEvent>();
 
+        /// <summary>Region-specific observer influence (independent per region).</summary>
+        public RegionObserverInfluence Influence = new RegionObserverInfluence();
+
+        /// <summary>Last computed carrying capacity (debug / UI).</summary>
+        public float LastCarryingCapacity;
+
+        /// <summary>Last water capacity after seasonal modifier (debug / UI).</summary>
+        public float LastWaterCapacity;
+
+        /// <summary>Last food spoilage applied (debug / tests).</summary>
+        public float LastFoodSpoilage;
+
+        /// <summary>Last food production applied (debug / tests).</summary>
+        public float LastFoodProduction;
+
+        /// <summary>Last natural + disease death pressure diagnostics.</summary>
+        public float LastNaturalDeath;
+        public float LastDiseaseDeath;
+
         public float Get(ResourceId id) => Resources[(int)id];
 
-        public void Set(ResourceId id, float value) => Resources[(int)id] = Mathf.Max(0f, value);
+        public void Set(ResourceId id, float value)
+        {
+            if (float.IsNaN(value) || float.IsInfinity(value))
+            {
+                value = 0f;
+            }
+
+            Resources[(int)id] = Mathf.Max(0f, value);
+        }
 
         public void Add(ResourceId id, float delta) => Set(id, Get(id) + delta);
+
+        public float GetProductionCapacity(ResourceId id) => ProductionCapacity[(int)id];
+
+        public void SetProductionCapacity(ResourceId id, float value)
+        {
+            if (float.IsNaN(value) || float.IsInfinity(value))
+            {
+                value = 0f;
+            }
+
+            ProductionCapacity[(int)id] = Mathf.Max(0f, value);
+        }
 
         public RegionState Clone()
         {
@@ -70,7 +127,11 @@ namespace DivineWorld.Simulation.Data
                 DisplayName = DisplayName,
                 DominantRace = DominantRace,
                 Population = Population,
-                Resources = (float[])Resources.Clone(),
+                Resources = Resources != null ? (float[])Resources.Clone() : new float[7],
+                ProductionCapacity = ProductionCapacity != null ? (float[])ProductionCapacity.Clone() : new float[7],
+                BaseWaterStorageCapacity = BaseWaterStorageCapacity,
+                LandCarryingCapacity = LandCarryingCapacity,
+                IsSeaRegion = IsSeaRegion,
                 Stability = Stability,
                 Education = Education,
                 FaithLevel = FaithLevel,
@@ -78,20 +139,30 @@ namespace DivineWorld.Simulation.Data
                 WeatherFactor = WeatherFactor,
                 LastEvent = LastEvent,
                 PopulationDelta = PopulationDelta,
+                Influence = Influence != null ? Influence.Clone() : new RegionObserverInfluence(),
+                LastCarryingCapacity = LastCarryingCapacity,
+                LastWaterCapacity = LastWaterCapacity,
+                LastFoodSpoilage = LastFoodSpoilage,
+                LastFoodProduction = LastFoodProduction,
+                LastNaturalDeath = LastNaturalDeath,
+                LastDiseaseDeath = LastDiseaseDeath,
                 ActiveEvents = new List<RegionEvent>()
             };
 
-            foreach (var e in ActiveEvents)
+            if (ActiveEvents != null)
             {
-                copy.ActiveEvents.Add(new RegionEvent
+                foreach (var e in ActiveEvents)
                 {
-                    EventId = e.EventId,
-                    EventType = e.EventType,
-                    RegionId = e.RegionId,
-                    StartDay = e.StartDay,
-                    Duration = e.Duration,
-                    Severity = e.Severity
-                });
+                    copy.ActiveEvents.Add(new RegionEvent
+                    {
+                        EventId = e.EventId,
+                        EventType = e.EventType,
+                        RegionId = e.RegionId,
+                        StartDay = e.StartDay,
+                        Duration = e.Duration,
+                        Severity = e.Severity
+                    });
+                }
             }
 
             return copy;
@@ -109,11 +180,44 @@ namespace DivineWorld.Simulation.Data
         public int DayOfYear = 1;
         public int TotalDays;
         public SeasonId CurrentSeason = SeasonId.Spring;
-        public int SeasonIndex;
-        public float SeasonProgress;
         public RegionState[] Regions = Array.Empty<RegionState>();
         public float GlobalChaos;
         public int RandomSeed;
+
+        public int CurrentYear => Year;
+
+        public int SeasonIndex => (int)CurrentSeason;
+
+        public int DayInSeason
+        {
+            get
+            {
+                int day = Mathf.Clamp(DayOfYear, 1, DaysPerYear);
+                return ((day - 1) % DaysPerSeason) + 1;
+            }
+        }
+
+        public float SeasonProgress => (DayInSeason - 1) / (float)DaysPerSeason;
+
+        public static SeasonId SeasonFromDayOfYear(int dayOfYear)
+        {
+            int day = dayOfYear;
+            if (day < 1)
+            {
+                day = 1;
+            }
+
+            int normalized = ((day - 1) % DaysPerYear) + 1;
+            if (normalized <= 90) return SeasonId.Spring;
+            if (normalized <= 180) return SeasonId.Summer;
+            if (normalized <= 270) return SeasonId.Autumn;
+            return SeasonId.Winter;
+        }
+
+        public void SyncSeasonFromDay()
+        {
+            CurrentSeason = SeasonFromDayOfYear(DayOfYear);
+        }
 
         public WorldState Clone()
         {
@@ -124,16 +228,17 @@ namespace DivineWorld.Simulation.Data
                 DayOfYear = DayOfYear,
                 TotalDays = TotalDays,
                 CurrentSeason = CurrentSeason,
-                SeasonIndex = SeasonIndex,
-                SeasonProgress = SeasonProgress,
                 GlobalChaos = GlobalChaos,
                 RandomSeed = RandomSeed,
-                Regions = new RegionState[Regions.Length]
+                Regions = new RegionState[Regions != null ? Regions.Length : 0]
             };
 
-            for (int i = 0; i < Regions.Length; i++)
+            if (Regions != null)
             {
-                copy.Regions[i] = Regions[i].Clone();
+                for (int i = 0; i < Regions.Length; i++)
+                {
+                    copy.Regions[i] = Regions[i].Clone();
+                }
             }
 
             return copy;
