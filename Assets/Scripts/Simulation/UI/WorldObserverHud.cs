@@ -125,7 +125,7 @@ namespace DivineWorld.Simulation.UI
             }
         }
 
-        void SaveSlot(SaveSlot slot)
+        void SaveToSlot(SaveSlot slot)
         {
             if (world == null)
             {
@@ -143,7 +143,7 @@ namespace DivineWorld.Simulation.UI
             }
         }
 
-        void LoadSlot(SaveSlot slot)
+        void LoadFromSlot(SaveSlot slot)
         {
             if (world == null)
             {
@@ -216,22 +216,22 @@ namespace DivineWorld.Simulation.UI
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("存1", GUILayout.Width(50)))
             {
-                SaveSlot(SaveSlot.Slot1);
+                SaveToSlot(SaveSlot.Slot1);
             }
 
             if (GUILayout.Button("存2", GUILayout.Width(50)))
             {
-                SaveSlot(SaveSlot.Slot2);
+                SaveToSlot(SaveSlot.Slot2);
             }
 
             if (GUILayout.Button("存3", GUILayout.Width(50)))
             {
-                SaveSlot(SaveSlot.Slot3);
+                SaveToSlot(SaveSlot.Slot3);
             }
 
             if (GUILayout.Button("存自动", GUILayout.Width(60)))
             {
-                SaveSlot(SaveSlot.Autosave);
+                SaveToSlot(SaveSlot.Autosave);
             }
 
             GUILayout.EndHorizontal();
@@ -239,22 +239,22 @@ namespace DivineWorld.Simulation.UI
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("读1", GUILayout.Width(50)))
             {
-                LoadSlot(SaveSlot.Slot1);
+                LoadFromSlot(SaveSlot.Slot1);
             }
 
             if (GUILayout.Button("读2", GUILayout.Width(50)))
             {
-                LoadSlot(SaveSlot.Slot2);
+                LoadFromSlot(SaveSlot.Slot2);
             }
 
             if (GUILayout.Button("读3", GUILayout.Width(50)))
             {
-                LoadSlot(SaveSlot.Slot3);
+                LoadFromSlot(SaveSlot.Slot3);
             }
 
             if (GUILayout.Button("读自动", GUILayout.Width(60)))
             {
-                LoadSlot(SaveSlot.Autosave);
+                LoadFromSlot(SaveSlot.Autosave);
             }
 
             GUILayout.EndHorizontal();
