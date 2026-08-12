@@ -7,7 +7,7 @@
 - [**Game Design Document**](docs/GameDesignDocument.md) — 《Divine World Simulation》GDD v1.0
 - [**Phase 1 范围**](docs/Phase1-Scope.md) — 当前实现锁定
 - [开发环境](docs/开发环境.md)
-- [故障排除（MonoManager）](docs/故障排除-MonoManager.md)
+- [故障排除（MonoManager）](docs/故障排除-MonoManager.md) — **本机反复打不开时必读；云端勿提交骨架 ProjectSettings**
 
 ## 现在能玩什么（Phase 1）
 
