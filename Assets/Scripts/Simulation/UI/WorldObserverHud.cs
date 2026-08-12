@@ -5,7 +5,7 @@ using UnityEngine;
 namespace DivineWorld.Simulation.UI
 {
     /// <summary>
-    /// Immediate-mode observer panel so Phase 1 runs without manual Canvas wiring.
+    /// Observer HUD for Phase 2: season, per-region influence, fast-forward, consistency test.
     /// </summary>
     public class WorldObserverHud : MonoBehaviour
     {
@@ -15,15 +15,28 @@ namespace DivineWorld.Simulation.UI
         Vector2 _scroll;
         string _cachedReport = "";
         int _lastDay = -1;
+        bool _subscribed;
 
         public void Bind(SimulationWorld simulationWorld)
         {
+            if (world != null && _subscribed)
+            {
+                world.OnDayAdvanced -= OnDay;
+                _subscribed = false;
+            }
+
             world = simulationWorld;
             if (world != null)
             {
-                world.OnDayAdvanced += _ => Refresh();
+                world.OnDayAdvanced += OnDay;
+                _subscribed = true;
                 Refresh();
             }
+        }
+
+        void OnDay(WorldState _)
+        {
+            Refresh();
         }
 
         void Start()
@@ -33,10 +46,17 @@ namespace DivineWorld.Simulation.UI
                 world = FindObjectOfType<SimulationWorld>();
             }
 
-            if (world != null)
+            if (world != null && !_subscribed)
             {
-                world.OnDayAdvanced += _ => Refresh();
-                Refresh();
+                Bind(world);
+            }
+        }
+
+        void OnDestroy()
+        {
+            if (world != null && _subscribed)
+            {
+                world.OnDayAdvanced -= OnDay;
             }
         }
 
@@ -47,6 +67,7 @@ namespace DivineWorld.Simulation.UI
                 return;
             }
 
+            world.Influence?.PullFromFocus();
             _cachedReport = world.BuildStatusReport();
             _lastDay = world.State != null ? world.State.TotalDays : -1;
         }
@@ -59,8 +80,8 @@ namespace DivineWorld.Simulation.UI
             }
 
             const float pad = 12f;
-            var area = new Rect(pad, pad, Mathf.Min(520f, Screen.width - pad * 2f), Screen.height - pad * 2f);
-            GUI.Box(area, "Divine World · 观察仪 (Phase 1)");
+            var area = new Rect(pad, pad, Mathf.Min(560f, Screen.width - pad * 2f), Screen.height - pad * 2f);
+            GUI.Box(area, "Divine World · 观察仪 (Phase 2 / 2-A)");
 
             GUILayout.BeginArea(new Rect(area.x + 10, area.y + 28, area.width - 20, area.height - 36));
 
@@ -70,32 +91,79 @@ namespace DivineWorld.Simulation.UI
                 world.AutoRun = !world.AutoRun;
             }
 
-            if (GUILayout.Button("+1日", GUILayout.Width(60)))
+            if (GUILayout.Button("+1日", GUILayout.Width(55)))
             {
                 world.AdvanceDay();
+            }
+
+            if (GUILayout.Button("+30日", GUILayout.Width(60)))
+            {
+                world.AdvanceDays(30);
+            }
+
+            if (GUILayout.Button("+1年快进", GUILayout.Width(80)))
+            {
+                world.FastForwardYears(1);
+            }
+
+            if (GUILayout.Button("+10年快进", GUILayout.Width(90)))
+            {
+                world.FastForwardYears(10);
+            }
+
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("+360日", GUILayout.Width(80)))
+            {
+                world.AdvanceDays(360);
                 Refresh();
             }
 
-            if (GUILayout.Button("+30日", GUILayout.Width(70)))
+            if (GUILayout.Button("快进1年", GUILayout.Width(80)))
             {
-                world.AdvanceDays(30);
+                world.FastForwardYears(1);
                 Refresh();
             }
 
             if (GUILayout.Button("重置世界", GUILayout.Width(80)))
             {
                 world.ResetWorld();
+            }
+
+            if (GUILayout.Button("一致性测试 1年", GUILayout.Width(120)))
+            {
+                world.RunConsistencyTestOneYear();
                 Refresh();
             }
 
             GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("一致性 Daily vs Fast 1年", GUILayout.Height(28)))
+            {
+                var report = DivineWorld.Simulation.Testing.FastForwardConsistencyTest.Run(
+                    world.State.Clone(),
+                    world.Races,
+                    world.Config,
+                    360);
+                Debug.Log(report.Text);
+                _cachedReport = report.Text + "\n\n" + world.BuildStatusReport();
+            }
+
+            GUILayout.EndHorizontal();
+
+            if (world.State != null)
+            {
+                GUILayout.Label($"季节 {world.CurrentSeason} | 年 {world.CurrentYear} | 第 {world.DayOfYear} 日 | 季内 {world.DayInSeason}/90");
+            }
 
             GUILayout.Space(6);
             GUILayout.Label("速度（秒/日）");
             world.SecondsPerDay = GUILayout.HorizontalSlider(world.SecondsPerDay, 0.05f, 1.5f);
 
             GUILayout.Space(8);
-            GUILayout.Label("注视地区（微调主要作用于此）");
+            GUILayout.Label("注视地区（微调写入该地区的独立 Influence）");
             GUILayout.BeginHorizontal();
             FocusBtn("全域", null);
             FocusBtn("教廷区", RegionId.Theocracy);
@@ -106,13 +174,25 @@ namespace DivineWorld.Simulation.UI
             var inf = world.Influence;
             GUILayout.Space(6);
             GUILayout.Label($"生育祝福 ×{inf.FertilityBlessing:0.00}");
-            inf.FertilityBlessing = GUILayout.HorizontalSlider(inf.FertilityBlessing, 0.7f, 1.3f);
+            float fert = GUILayout.HorizontalSlider(inf.FertilityBlessing, 0.7f, 1.3f);
             GUILayout.Label($"收成祝福 ×{inf.HarvestBlessing:0.00}");
-            inf.HarvestBlessing = GUILayout.HorizontalSlider(inf.HarvestBlessing, 0.7f, 1.3f);
+            float harvest = GUILayout.HorizontalSlider(inf.HarvestBlessing, 0.7f, 1.3f);
             GUILayout.Label($"疫病压力 ×{inf.DiseaseCurse:0.00}");
-            inf.DiseaseCurse = GUILayout.HorizontalSlider(inf.DiseaseCurse, 0.7f, 1.3f);
+            float disease = GUILayout.HorizontalSlider(inf.DiseaseCurse, 0.7f, 1.3f);
             GUILayout.Label($"稳定祝福 ×{inf.StabilityBlessing:0.00}");
-            inf.StabilityBlessing = GUILayout.HorizontalSlider(inf.StabilityBlessing, 0.7f, 1.3f);
+            float stability = GUILayout.HorizontalSlider(inf.StabilityBlessing, 0.7f, 1.3f);
+
+            if (!Mathf.Approximately(fert, inf.FertilityBlessing)
+                || !Mathf.Approximately(harvest, inf.HarvestBlessing)
+                || !Mathf.Approximately(disease, inf.DiseaseCurse)
+                || !Mathf.Approximately(stability, inf.StabilityBlessing))
+            {
+                inf.FertilityBlessing = fert;
+                inf.HarvestBlessing = harvest;
+                inf.DiseaseCurse = disease;
+                inf.StabilityBlessing = stability;
+                inf.PushToFocus();
+            }
 
             if (GUILayout.Button("清除微调", GUILayout.Width(100)))
             {
@@ -143,7 +223,9 @@ namespace DivineWorld.Simulation.UI
 
             if (GUILayout.Button(label, GUILayout.Height(28)))
             {
+                world.Influence.PushToFocus();
                 world.Influence.FocusRegion = region;
+                world.Influence.PullFromFocus();
             }
 
             GUI.backgroundColor = prev;

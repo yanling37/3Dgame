@@ -6,13 +6,13 @@ using UnityEngine;
 namespace DivineWorld.Simulation
 {
     /// <summary>
-    /// Spawns Phase 1 simulation runtime in an empty scene.
+    /// Spawns Phase 2 simulation runtime: world + HUD + map visualization.
     /// Attach to any GameObject, or let Boot scene create it.
     /// </summary>
     public class SimulationBootstrap : MonoBehaviour
     {
         [SerializeField] bool createCameraIfMissing = true;
-        [SerializeField] bool createRegionMarkers = true;
+        [SerializeField] bool createMapVisualization = true;
         [SerializeField] bool createHud = true;
 
         void Awake()
@@ -29,15 +29,15 @@ namespace DivineWorld.Simulation
                 hud.Bind(world);
             }
 
-            if (createRegionMarkers)
+            if (createMapVisualization)
             {
-                var markersGo = new GameObject("RegionMarkers");
-                markersGo.transform.position = new Vector3(0f, 0f, 8f);
-                var markers = markersGo.AddComponent<SimpleRegionMarkers>();
-                markers.Bind(world);
+                var mapGo = new GameObject("MapVisualization");
+                mapGo.transform.position = new Vector3(0f, 0f, 8f);
+                var map = mapGo.AddComponent<MapVisualizationController>();
+                map.Bind(world);
             }
 
-            Debug.Log("[DivineWorld] Phase 1 simulation started. Use on-screen Observer HUD.");
+            Debug.Log("[DivineWorld] Phase 2 / 2-A simulation started (season / resources / population / events / map / fast-forward).");
         }
 
         void EnsureCamera()
@@ -49,8 +49,8 @@ namespace DivineWorld.Simulation
 
             if (Camera.main != null)
             {
-                Camera.main.transform.position = new Vector3(0f, 4f, -6f);
-                Camera.main.transform.rotation = Quaternion.Euler(15f, 0f, 0f);
+                Camera.main.transform.position = new Vector3(0f, 5f, -8f);
+                Camera.main.transform.rotation = Quaternion.Euler(18f, 0f, 0f);
                 return;
             }
 
@@ -58,8 +58,8 @@ namespace DivineWorld.Simulation
             camGo.tag = "MainCamera";
             var cam = camGo.AddComponent<Camera>();
             camGo.AddComponent<AudioListener>();
-            cam.transform.position = new Vector3(0f, 4f, -6f);
-            cam.transform.rotation = Quaternion.Euler(15f, 0f, 0f);
+            cam.transform.position = new Vector3(0f, 5f, -8f);
+            cam.transform.rotation = Quaternion.Euler(18f, 0f, 0f);
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0.08f, 0.1f, 0.14f);
         }
