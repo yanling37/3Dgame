@@ -21,6 +21,11 @@ namespace HeadlessSimTests
                 case "p2a2":
                 case "phase2a2":
                     return Phase2A2Tests.Run();
+                case "p2b":
+                case "observation":
+                    Console.WriteLine("Divine World P2-B Observation Tests");
+                    Console.WriteLine("==================================");
+                    return ObservationTests.Run();
                 default:
                     Console.WriteLine("Divine World P2-A Headless Tests");
                     Console.WriteLine("================================");
@@ -29,7 +34,9 @@ namespace HeadlessSimTests
                     int fert = FertilityModifierDiagnostic.Run();
                     Console.WriteLine();
                     int p2a2 = Phase2A2Tests.Run();
-                    return p2a != 0 ? p2a : (fert != 0 ? fert : p2a2);
+                    Console.WriteLine();
+                    int p2b = ObservationTests.Run();
+                    return p2a != 0 ? p2a : (fert != 0 ? fert : (p2a2 != 0 ? p2a2 : p2b));
             }
         }
     }
