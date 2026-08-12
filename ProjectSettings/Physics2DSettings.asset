@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!12 &1
+--- !u!19 &1
 Physics2DSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 6
@@ -23,29 +23,22 @@ Physics2DSettings:
     serializedVersion: 2
     useMultithreading: 0
     useConsistencySorting: 0
-    interpolationPosesPerJob: 100
-    newContactsPerJob: 30
-    collideContactsPerJob: 100
-    clearFlagsPerJob: 200
-    clearBodyForcesPerJob: 200
-    syncDiscreteFixturesPerJob: 50
-    syncContinuousFixturesPerJob: 50
-    findNearestContactsPerJob: 100
-    updateTriggerContactsPerJob: 100
-    islandSolverCostThreshold: 100
-    islandSolverBodyCostScale: 1
-    islandSolverContactCostScale: 10
-    islandSolverJointCostScale: 10
-    islandSolverBodiesPerJob: 50
-    islandSolverContactsPerJob: 50
+    m_InterpolationPosesPerJob: 100
+    m_NewContactsPerJob: 30
+    m_CollideContactsPerJob: 100
+    m_ClearFlagsPerJob: 200
+    m_ClearBodyForcesPerJob: 200
+    m_SyncDiscreteFixturesPerJob: 50
+    m_SyncContinuousFixturesPerJob: 50
+    m_FindNearestContactsPerJob: 100
+    m_UpdateTriggerContactsPerJob: 100
+    m_IslandSolverCostThreshold: 100
+    m_IslandSolverBodyCostScale: 1
+    m_IslandSolverContactCostScale: 10
+    m_IslandSolverJointCostScale: 10
+    m_IslandSolverBodiesPerJob: 50
+    m_IslandSolverContactsPerJob: 50
   m_SimulationMode: 0
-  m_SimulationLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_MaxSubStepCount: 4
-  m_MinSubStepFPS: 30
-  m_UseSubStepping: 0
-  m_UseSubStepContacts: 0
   m_QueriesHitTriggers: 1
   m_QueriesStartInColliders: 1
   m_CallbacksOnDisable: 1

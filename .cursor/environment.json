@@ -1,5 +1,5 @@
 {
   "name": "3Dgame Unity+Blender",
   "install": "bash scripts/setup/install-blender-linux.sh && git lfs install && bash scripts/setup/verify-env.sh || true",
-  "start": "echo 'Unity Editor runs on your local PC (Windows recommended). Blender CLI available via ~/bin/blender'"
+  "start": "echo 'Unity Editor runs on your local PC (Windows recommended). Blender CLI available via ~/bin/blender. NEVER invent ProjectSettings; see docs/故障排除-MonoManager.md and .cursor/rules/unity-projectsettings.mdc — local PC hits MonoManager NULL when skeleton ProjectSettings are committed.'"
 }
