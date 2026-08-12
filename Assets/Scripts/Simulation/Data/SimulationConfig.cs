@@ -29,9 +29,16 @@ namespace DivineWorld.Simulation.Data
         public float FoodShortageStabilityLoss = 0.004f;
         public float FoodSurplusStabilityGain = 0.0015f;
         public float FoodShortageEventChance = 0.08f;
+        public float FoodShortageReserveDays = 10f;
 
-        [Header("Water")]
+        [Header("Water — living vs agriculture")]
         public float WaterNeedPerCapita = 0.015f;
+        /// <summary>Agricultural water required per unit of unconstrained food production.</summary>
+        public float AgriculturalWaterPerFoodUnit = 0.08f;
+        /// <summary>Smooth WaterFactor curve steepness. Higher = sharper near zero.</summary>
+        public float AgriculturalWaterFactorSteepness = 3.0f;
+        /// <summary>Daily water production scale: ProductionCapacity[Water] × this × weather × season.</summary>
+        public float WaterProductionRate = 2.0f;
 
         [Header("Other resource yields (capacity / population based)")]
         public float TimberLaborScale = 0.01f;
@@ -43,13 +50,18 @@ namespace DivineWorld.Simulation.Data
         public float MagicYieldPerCapita = 0.0001f;
         public float SeaMagicAffinityBonus = 1.4f;
         public float LandMagicAffinityBonus = 0.7f;
+        /// <summary>Soft saturation caps prevent Faith/Knowledge/Magic unbounded float blow-up.</summary>
+        public float FaithStockSoftCap = 250000f;
+        public float KnowledgeStockSoftCap = 200000f;
+        public float MagicStockSoftCap = 150000f;
 
         [Header("Population")]
         public float BaseFertility = 0.00035f;
         public float BaseNaturalDeath = 0.00022f;
         public float DiseaseDeathRate = 0.0015f;
         public float DiseaseDecay = 0.995f;
-        public float MinPopulation = 100f;
+        /// <summary>Population may reach 0. No protective floor.</summary>
+        public float MinPopulation = 0f;
         public float FoodRatioSoftCap = 0.5f;
         public float CarryingFoodWeight = 0.45f;
         public float CarryingWaterWeight = 0.25f;
@@ -58,6 +70,19 @@ namespace DivineWorld.Simulation.Data
         public float CarryingTechFromEducation = 0.3f;
         public float FoodProductionCapacityNorm = 1000f;
         public float WaterAvailabilityNormPerCapita = 0.015f;
+        /// <summary>Extra death pressure when population exceeds carrying capacity.</summary>
+        public float OverpopulationDeathRate = 0.00015f;
+
+        [Header("Events")]
+        public float NaturalDisasterChancePerDay = 0.002f;
+        public int NaturalDisasterDuration = 15;
+        public float NaturalDisasterFoodProductionPenalty = 0.55f;
+        public int FoodShortageEventDuration = 20;
+        public int DiseaseOutbreakEventDuration = 30;
+
+        [Header("FastForward")]
+        public int FastForwardSubchunkDays = 5;
+        public float FastForwardFoodReserveBreakpointDays = 12f;
 
         [Header("Society drift")]
         public float EducationLerp = 0.002f;

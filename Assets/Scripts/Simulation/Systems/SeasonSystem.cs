@@ -31,13 +31,6 @@ namespace DivineWorld.Simulation.Systems
             {
                 world.DayOfYear = 1;
                 world.Year++;
-                if (world.Regions != null)
-                {
-                    foreach (var region in world.Regions)
-                    {
-                        region.LastEvent = $"新年纪事 · {world.Year}";
-                    }
-                }
             }
 
             world.SyncSeasonFromDay();
