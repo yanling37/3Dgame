@@ -1,0 +1,190 @@
+{
+  "format": 1,
+  "restore": {
+    "/workspace/Tools/HeadlessSimTests/HeadlessSimTests/HeadlessSimTests.csproj": {}
+  },
+  "projects": {
+    "/workspace/Tools/HeadlessSimTests/DivineWorld.Simulation.Headless/DivineWorld.Simulation.Headless.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/workspace/Tools/HeadlessSimTests/DivineWorld.Simulation.Headless/DivineWorld.Simulation.Headless.csproj",
+        "projectName": "DivineWorld.Simulation.Headless",
+        "projectPath": "/workspace/Tools/HeadlessSimTests/DivineWorld.Simulation.Headless/DivineWorld.Simulation.Headless.csproj",
+        "packagesPath": "/home/ubuntu/.nuget/packages/",
+        "outputPath": "/workspace/Tools/HeadlessSimTests/DivineWorld.Simulation.Headless/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/ubuntu/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/workspace/Tools/HeadlessSimTests/UnityEngineShim/UnityEngineShim.csproj": {
+                "projectPath": "/workspace/Tools/HeadlessSimTests/UnityEngineShim/UnityEngineShim.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/home/ubuntu/.dotnet/sdk/8.0.424/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/workspace/Tools/HeadlessSimTests/HeadlessSimTests/HeadlessSimTests.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/workspace/Tools/HeadlessSimTests/HeadlessSimTests/HeadlessSimTests.csproj",
+        "projectName": "HeadlessSimTests",
+        "projectPath": "/workspace/Tools/HeadlessSimTests/HeadlessSimTests/HeadlessSimTests.csproj",
+        "packagesPath": "/home/ubuntu/.nuget/packages/",
+        "outputPath": "/workspace/Tools/HeadlessSimTests/HeadlessSimTests/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/ubuntu/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/workspace/Tools/HeadlessSimTests/DivineWorld.Simulation.Headless/DivineWorld.Simulation.Headless.csproj": {
+                "projectPath": "/workspace/Tools/HeadlessSimTests/DivineWorld.Simulation.Headless/DivineWorld.Simulation.Headless.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/home/ubuntu/.dotnet/sdk/8.0.424/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/workspace/Tools/HeadlessSimTests/UnityEngineShim/UnityEngineShim.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/workspace/Tools/HeadlessSimTests/UnityEngineShim/UnityEngineShim.csproj",
+        "projectName": "UnityEngineShim",
+        "projectPath": "/workspace/Tools/HeadlessSimTests/UnityEngineShim/UnityEngineShim.csproj",
+        "packagesPath": "/home/ubuntu/.nuget/packages/",
+        "outputPath": "/workspace/Tools/HeadlessSimTests/UnityEngineShim/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/ubuntu/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/home/ubuntu/.dotnet/sdk/8.0.424/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

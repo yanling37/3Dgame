@@ -6,7 +6,7 @@ using UnityEngine;
 namespace DivineWorld.Simulation
 {
     /// <summary>
-    /// Spawns Phase 1 simulation runtime in an empty scene.
+    /// Spawns Phase 2-A simulation runtime in an empty scene.
     /// Attach to any GameObject, or let Boot scene create it.
     /// </summary>
     public class SimulationBootstrap : MonoBehaviour
@@ -37,7 +37,7 @@ namespace DivineWorld.Simulation
                 markers.Bind(world);
             }
 
-            Debug.Log("[DivineWorld] Phase 1 simulation started. Use on-screen Observer HUD.");
+            Debug.Log("[DivineWorld] Phase 2-A simulation started. Season/Resource/Population core active.");
         }
 
         void EnsureCamera()

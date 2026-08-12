@@ -1,0 +1,12 @@
+/workspace/Tools/HeadlessSimTests/UnityEngineShim/bin/Release/net8.0/UnityEngineShim.deps.json
+/workspace/Tools/HeadlessSimTests/UnityEngineShim/bin/Release/net8.0/UnityEngineShim.dll
+/workspace/Tools/HeadlessSimTests/UnityEngineShim/bin/Release/net8.0/UnityEngineShim.pdb
+/workspace/Tools/HeadlessSimTests/UnityEngineShim/obj/Release/net8.0/UnityEngineShim.GeneratedMSBuildEditorConfig.editorconfig
+/workspace/Tools/HeadlessSimTests/UnityEngineShim/obj/Release/net8.0/UnityEngineShim.AssemblyInfoInputs.cache
+/workspace/Tools/HeadlessSimTests/UnityEngineShim/obj/Release/net8.0/UnityEngineShim.AssemblyInfo.cs
+/workspace/Tools/HeadlessSimTests/UnityEngineShim/obj/Release/net8.0/UnityEngineShim.csproj.CoreCompileInputs.cache
+/workspace/Tools/HeadlessSimTests/UnityEngineShim/obj/Release/net8.0/UnityEngineShim.sourcelink.json
+/workspace/Tools/HeadlessSimTests/UnityEngineShim/obj/Release/net8.0/UnityEngineShim.dll
+/workspace/Tools/HeadlessSimTests/UnityEngineShim/obj/Release/net8.0/refint/UnityEngineShim.dll
+/workspace/Tools/HeadlessSimTests/UnityEngineShim/obj/Release/net8.0/UnityEngineShim.pdb
+/workspace/Tools/HeadlessSimTests/UnityEngineShim/obj/Release/net8.0/ref/UnityEngineShim.dll

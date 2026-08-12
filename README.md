@@ -40,4 +40,6 @@ powershell -ExecutionPolicy Bypass -File scripts\setup\sync-from-repo-to-3dgame2
 
 - GDD + Phase1 范围已入库
 - Phase 1 纯模拟核心 + 观察仪 UI + 极简 3D 标记已提交
-- 下一步：存档 JSON、组织层（Level 1）、更明确的事件条件表
+- **Phase 2-A**：360 天四季、季节天气、资源生命周期（Food/Water/Magic）、承载力人口、地区独立 ObserverInfluence
+- 无头测试：`dotnet run --project Tools/HeadlessSimTests/HeadlessSimTests/HeadlessSimTests.csproj -c Release`
+- 下一步（P2-B / P2-C）：饥荒/流民/事件；历史数据/图表/数学快进
