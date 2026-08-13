@@ -1,90 +1,123 @@
 using DivineWorld.Simulation.Core;
 using DivineWorld.Simulation.Data;
+using DivineWorld.Simulation.Observation;
 using UnityEngine;
 
 namespace DivineWorld.Simulation.UI
 {
     /// <summary>
-    /// Observer HUD for Phase 2: season, per-region influence, fast-forward, consistency test.
+    /// P2-B Observation v0.2 HUD. Display values come only from ObservationHost snapshots.
+    /// SimulationWorld is used solely for player controls (advance / reset / influence).
+    /// Region details scroll inside a dedicated ScrollRect, not the whole screen.
     /// </summary>
     public class WorldObserverHud : MonoBehaviour
     {
         [SerializeField] SimulationWorld world;
         [SerializeField] bool visible = true;
 
-        Vector2 _scroll;
-        string _cachedReport = "";
-        int _lastDay = -1;
-        bool _subscribed;
+        ObservationHost _observation;
+        RegionObservationScrollView _regionScroll;
+        bool _blessAllRegions;
+        RegionId _lastSelectedRegion;
 
-        public void Bind(SimulationWorld simulationWorld)
+        public void Bind(SimulationWorld simulationWorld, ObservationHost observation)
         {
-            if (world != null && _subscribed)
-            {
-                world.OnDayAdvanced -= OnDay;
-                _subscribed = false;
-            }
-
             world = simulationWorld;
-            if (world != null)
-            {
-                world.OnDayAdvanced += OnDay;
-                _subscribed = true;
-                Refresh();
-            }
-        }
-
-        void OnDay(WorldState _)
-        {
-            Refresh();
-        }
-
-        void Start()
-        {
-            if (world == null)
-            {
-                world = FindObjectOfType<SimulationWorld>();
-            }
-
-            if (world != null && !_subscribed)
-            {
-                Bind(world);
-            }
-        }
-
-        void OnDestroy()
-        {
-            if (world != null && _subscribed)
-            {
-                world.OnDayAdvanced -= OnDay;
-            }
-        }
-
-        void Refresh()
-        {
-            if (world == null)
-            {
-                return;
-            }
-
-            world.Influence?.PullFromFocus();
-            _cachedReport = world.BuildStatusReport();
-            _lastDay = world.State != null ? world.State.TotalDays : -1;
+            _observation = observation;
+            EnsureRegionScroll();
         }
 
         void OnGUI()
         {
             if (!visible || world == null)
             {
+                if (_regionScroll != null)
+                {
+                    _regionScroll.gameObject.SetActive(false);
+                }
+
                 return;
             }
 
+            if (_regionScroll != null)
+            {
+                _regionScroll.gameObject.SetActive(true);
+            }
+
             const float pad = 12f;
-            var area = new Rect(pad, pad, Mathf.Min(560f, Screen.width - pad * 2f), Screen.height - pad * 2f);
-            GUI.Box(area, "Divine World · 观察仪 (Phase 2 / 2-A)");
+            float hudW = Mathf.Min(520f, Screen.width - pad * 2f);
+            const float topH = 278f;
+            const float bottomH = 228f;
+            float midH = Mathf.Max(180f, Screen.height - pad * 2f - topH - bottomH);
+            float midY = pad + topH;
 
-            GUILayout.BeginArea(new Rect(area.x + 10, area.y + 28, area.width - 20, area.height - 36));
+            GUI.Box(new Rect(pad, pad, hudW, topH), ObservationLabels.UiVersion);
+            GUILayout.BeginArea(new Rect(pad + 10f, pad + 28f, hudW - 20f, topH - 36f));
+            DrawWorldHeader(_observation != null ? _observation.Current : null);
+            DrawHistoryStatus();
+            DrawControls();
+            DrawRegionTabs();
+            GUILayout.Label("—— 地区信息 ——");
+            GUILayout.EndArea();
 
+            EnsureRegionScroll();
+            if (_regionScroll != null)
+            {
+                _regionScroll.SetImguiRect(new Rect(pad, midY, hudW, midH));
+            }
+
+            GUI.Box(new Rect(pad, midY + midH, hudW, bottomH), "");
+            GUILayout.BeginArea(new Rect(pad + 10f, midY + midH + 8f, hudW - 20f, bottomH - 16f));
+            DrawInfluence();
+            GUILayout.EndArea();
+        }
+
+        void EnsureRegionScroll()
+        {
+            if (_regionScroll != null || _observation == null)
+            {
+                return;
+            }
+
+            _regionScroll = RegionObservationScrollView.Create(_observation);
+        }
+
+        void OnDestroy()
+        {
+            if (_regionScroll != null)
+            {
+                Destroy(_regionScroll.gameObject);
+                _regionScroll = null;
+            }
+        }
+
+        void DrawWorldHeader(WorldObservationSnapshot snap)
+        {
+            GUILayout.Label(ObservationPanelText.FormatWorldHeader(snap));
+            if (snap != null && snap.HaltedOnNumericError)
+            {
+                GUILayout.Label("!! NUMERIC HALT !!");
+                GUILayout.Label(snap.LastNumericError ?? "");
+            }
+        }
+
+        void DrawHistoryStatus()
+        {
+            if (_observation == null)
+            {
+                return;
+            }
+
+            var hist = _observation.History;
+            var latest = hist.Latest;
+            int latestDays = latest != null ? latest.TotalDays : -1;
+            string has30 = hist.TryGetExact(30) != null ? "yes" : "no";
+            GUILayout.Label($"History {hist.Count} samples | latest TotalDays={latestDays} | Day30={has30}");
+        }
+
+        void DrawControls()
+        {
+            GUILayout.Space(6);
             GUILayout.BeginHorizontal();
             if (GUILayout.Button(world.AutoRun ? "暂停" : "继续", GUILayout.Width(70)))
             {
@@ -106,73 +139,106 @@ namespace DivineWorld.Simulation.UI
                 world.FastForwardYears(1);
             }
 
-            if (GUILayout.Button("+10年快进", GUILayout.Width(90)))
-            {
-                world.FastForwardYears(10);
-            }
-
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("+360日", GUILayout.Width(80)))
-            {
-                world.AdvanceDays(360);
-                Refresh();
-            }
-
-            if (GUILayout.Button("快进1年", GUILayout.Width(80)))
-            {
-                world.FastForwardYears(1);
-                Refresh();
-            }
-
             if (GUILayout.Button("重置世界", GUILayout.Width(80)))
             {
                 world.ResetWorld();
             }
 
-            if (GUILayout.Button("一致性测试 1年", GUILayout.Width(120)))
-            {
-                world.RunConsistencyTestOneYear();
-                Refresh();
-            }
-
             GUILayout.EndHorizontal();
 
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("一致性 Daily vs Fast 1年", GUILayout.Height(28)))
-            {
-                var report = DivineWorld.Simulation.Testing.FastForwardConsistencyTest.Run(
-                    world.State.Clone(),
-                    world.Races,
-                    world.Config,
-                    360);
-                Debug.Log(report.Text);
-                _cachedReport = report.Text + "\n\n" + world.BuildStatusReport();
-            }
-
-            GUILayout.EndHorizontal();
-
-            if (world.State != null)
-            {
-                GUILayout.Label($"季节 {world.CurrentSeason} | 年 {world.CurrentYear} | 第 {world.DayOfYear} 日 | 季内 {world.DayInSeason}/90");
-            }
-
-            GUILayout.Space(6);
             GUILayout.Label("速度（秒/日）");
             world.SecondsPerDay = GUILayout.HorizontalSlider(world.SecondsPerDay, 0.05f, 1.5f);
+        }
+
+        void DrawRegionTabs()
+        {
+            if (_observation?.Current?.Regions == null)
+            {
+                return;
+            }
 
             GUILayout.Space(8);
-            GUILayout.Label("注视地区（微调写入该地区的独立 Influence）");
+            GUILayout.Label("选中地区");
             GUILayout.BeginHorizontal();
-            FocusBtn("全域", null);
-            FocusBtn("教廷区", RegionId.Theocracy);
-            FocusBtn("帝国区", RegionId.Empire);
-            FocusBtn("海", RegionId.Sea);
-            GUILayout.EndHorizontal();
+            DrawBlessScopeButton("全域", global: true, highlight: _blessAllRegions);
+            var regions = _observation.Current.Regions;
+            for (int i = 0; i < regions.Length; i++)
+            {
+                var region = regions[i];
+                if (region == null)
+                {
+                    continue;
+                }
 
+                bool on = !_blessAllRegions && _observation.SelectedRegionId == region.RegionId;
+                DrawRegionSelectButton(region.DisplayName, region.RegionId, on);
+            }
+
+            GUILayout.EndHorizontal();
+        }
+
+        void DrawBlessScopeButton(string label, bool global, bool highlight)
+        {
+            var prev = GUI.backgroundColor;
+            if (highlight)
+            {
+                GUI.backgroundColor = new Color(0.6f, 0.85f, 1f);
+            }
+
+            if (GUILayout.Button(label, GUILayout.Height(28)))
+            {
+                _blessAllRegions = global;
+                if (!global)
+                {
+                    return;
+                }
+
+                if (world?.Influence != null)
+                {
+                    world.Influence.FocusRegion = null;
+                    world.Influence.PullFromFocus();
+                }
+            }
+
+            GUI.backgroundColor = prev;
+        }
+
+        void DrawRegionSelectButton(string label, RegionId regionId, bool highlight)
+        {
+            var prev = GUI.backgroundColor;
+            if (highlight)
+            {
+                GUI.backgroundColor = new Color(0.6f, 0.85f, 1f);
+            }
+
+            if (GUILayout.Button(label, GUILayout.Height(28)))
+            {
+                _blessAllRegions = false;
+                _observation.SelectRegion(regionId);
+                if (world?.Influence != null)
+                {
+                    world.Influence.FocusRegion = regionId;
+                    world.Influence.PullFromFocus();
+                }
+            }
+
+            GUI.backgroundColor = prev;
+        }
+
+        void DrawInfluence()
+        {
+            if (world?.Influence == null)
+            {
+                return;
+            }
+
+            GUILayout.Label(_blessAllRegions
+                ? "祝福目标: 全域（同时写入三个地区）"
+                : $"祝福目标: {_observation.SelectedRegionId}（仅该地区）");
             var inf = world.Influence;
-            GUILayout.Space(6);
+            SyncInfluenceFocus(inf);
+            inf.PullFromFocus();
+
             GUILayout.Label($"生育祝福 ×{inf.FertilityBlessing:0.00}");
             float fert = GUILayout.HorizontalSlider(inf.FertilityBlessing, 0.7f, 1.3f);
             GUILayout.Label($"收成祝福 ×{inf.HarvestBlessing:0.00}");
@@ -198,37 +264,23 @@ namespace DivineWorld.Simulation.UI
             {
                 inf.ResetSoft();
             }
-
-            GUILayout.Space(8);
-            if (world.State != null && world.State.TotalDays != _lastDay)
-            {
-                Refresh();
-            }
-
-            _scroll = GUILayout.BeginScrollView(_scroll);
-            GUILayout.TextArea(_cachedReport, GUILayout.ExpandHeight(true));
-            GUILayout.EndScrollView();
-
-            GUILayout.EndArea();
         }
 
-        void FocusBtn(string label, RegionId? region)
+        void SyncInfluenceFocus(DivineWorld.Simulation.Player.ObserverInfluence inf)
         {
-            bool on = world.Influence.FocusRegion == region;
-            var prev = GUI.backgroundColor;
-            if (on)
+            if (_observation == null || inf == null)
             {
-                GUI.backgroundColor = new Color(0.6f, 0.85f, 1f);
+                return;
             }
 
-            if (GUILayout.Button(label, GUILayout.Height(28)))
+            var selected = _observation.SelectedRegionId;
+            if (selected != _lastSelectedRegion)
             {
-                world.Influence.PushToFocus();
-                world.Influence.FocusRegion = region;
-                world.Influence.PullFromFocus();
+                _lastSelectedRegion = selected;
+                _blessAllRegions = false;
             }
 
-            GUI.backgroundColor = prev;
+            inf.FocusRegion = _blessAllRegions ? (RegionId?)null : selected;
         }
     }
 }

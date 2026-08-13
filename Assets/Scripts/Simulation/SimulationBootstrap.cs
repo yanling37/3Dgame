@@ -1,4 +1,5 @@
 using DivineWorld.Simulation.Core;
+using DivineWorld.Simulation.Observation;
 using DivineWorld.Simulation.Presentation;
 using DivineWorld.Simulation.UI;
 using UnityEngine;
@@ -6,14 +7,15 @@ using UnityEngine;
 namespace DivineWorld.Simulation
 {
     /// <summary>
-    /// Spawns Phase 2 simulation runtime: world + HUD + map visualization.
-    /// Attach to any GameObject, or let Boot scene create it.
+    /// Spawns simulation runtime plus P2-B observation host / HUD / map.
     /// </summary>
     public class SimulationBootstrap : MonoBehaviour
     {
         [SerializeField] bool createCameraIfMissing = true;
         [SerializeField] bool createMapVisualization = true;
         [SerializeField] bool createHud = true;
+
+        ObservationHost _observation;
 
         void Awake()
         {
@@ -22,11 +24,16 @@ namespace DivineWorld.Simulation
             var worldGo = new GameObject("SimulationWorld");
             var world = worldGo.AddComponent<SimulationWorld>();
 
+            _observation = new ObservationHost();
+            world.OnWorldReset += _observation.HandleWorldReset;
+            world.OnDayAdvanced += _observation.HandleDayAdvanced;
+            _observation.HandleWorldReset(world.State);
+
             if (createHud)
             {
                 var hudGo = new GameObject("WorldObserverHud");
                 var hud = hudGo.AddComponent<WorldObserverHud>();
-                hud.Bind(world);
+                hud.Bind(world, _observation);
             }
 
             if (createMapVisualization)
@@ -34,10 +41,10 @@ namespace DivineWorld.Simulation
                 var mapGo = new GameObject("MapVisualization");
                 mapGo.transform.position = new Vector3(0f, 0f, 8f);
                 var map = mapGo.AddComponent<MapVisualizationController>();
-                map.Bind(world);
+                map.Bind(_observation);
             }
 
-            Debug.Log("[DivineWorld] Phase 2 / 2-A simulation started (season / resources / population / events / map / fast-forward).");
+            Debug.Log("[DivineWorld] " + ObservationLabels.UiVersion);
         }
 
         void EnsureCamera()
