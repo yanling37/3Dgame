@@ -47,4 +47,5 @@ FastForwardYears(n)
 
 ## 地图
 
-- `MapVisualizationController`：人口采样点（≤40/区）、资源图腾、事件色点
+- `ObservationHost` → `RegionObservationSnapshot` → `PopulationVisualizer`：参数化人口占位点（每区最多 `MaxMarkersPerRegion`）
+- `MapVisualizationController`：资源图腾、事件色点

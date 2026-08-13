@@ -1,22 +1,17 @@
-using System.Collections.Generic;
 using DivineWorld.Simulation.Core;
 using DivineWorld.Simulation.Data;
-using DivineWorld.Simulation.Systems;
 using UnityEngine;
 
 namespace DivineWorld.Simulation.Presentation
 {
     /// <summary>
-    /// Reads simulation data and renders map visuals. Does not mutate simulation.
-    /// Population uses sampled density dots (capped), never 1:1 GameObjects.
+    /// Reads simulation data and renders map region totems / event cues.
+    /// Population markers live in <see cref="PopulationVisualizer"/> (observation snapshots).
     /// </summary>
     public class MapVisualizationController : MonoBehaviour
     {
-        const int MaxDotsPerRegion = 40;
-
         [SerializeField] SimulationWorld world;
         [SerializeField] float spacing = 7f;
-        [SerializeField] float regionRadius = 2.2f;
 
         struct RegionView
         {
@@ -25,8 +20,6 @@ namespace DivineWorld.Simulation.Presentation
             public Renderer TotemRenderer;
             public Transform EventMarker;
             public Renderer EventRenderer;
-            public readonly List<Transform> Dots;
-            public readonly List<Renderer> DotRenderers;
 
             public RegionView(Transform root)
             {
@@ -35,8 +28,6 @@ namespace DivineWorld.Simulation.Presentation
                 TotemRenderer = null;
                 EventMarker = null;
                 EventRenderer = null;
-                Dots = new List<Transform>(MaxDotsPerRegion);
-                DotRenderers = new List<Renderer>(MaxDotsPerRegion);
             }
         }
 
@@ -136,22 +127,6 @@ namespace DivineWorld.Simulation.Presentation
                 view.EventRenderer = evt.GetComponent<Renderer>();
                 view.EventMarker.gameObject.SetActive(false);
 
-                for (int d = 0; d < MaxDotsPerRegion; d++)
-                {
-                    var dot = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                    dot.name = $"PopDot_{d}";
-                    dot.transform.SetParent(root, false);
-                    dot.transform.localScale = Vector3.one * 0.18f;
-                    Object.Destroy(dot.GetComponent<Collider>());
-                    float ang = d * 2.399f; // golden-angle-ish
-                    float rad = regionRadius * Mathf.Sqrt((d + 1f) / MaxDotsPerRegion);
-                    dot.transform.localPosition = new Vector3(Mathf.Cos(ang) * rad, 0.15f, Mathf.Sin(ang) * rad);
-                    var rend = dot.GetComponent<Renderer>();
-                    view.Dots.Add(dot.transform);
-                    view.DotRenderers.Add(rend);
-                    dot.SetActive(false);
-                }
-
                 _views[i] = view;
             }
         }
@@ -167,21 +142,6 @@ namespace DivineWorld.Simulation.Presentation
             {
                 var region = world.State.Regions[i];
                 var view = _views[i];
-
-                int dots = PopulationToDotCount(region.Population);
-                Color trend = region.PopulationDelta >= 0f
-                    ? new Color(0.45f, 0.9f, 0.5f)
-                    : new Color(0.95f, 0.45f, 0.4f);
-
-                for (int d = 0; d < view.Dots.Count; d++)
-                {
-                    bool on = d < dots;
-                    view.Dots[d].gameObject.SetActive(on);
-                    if (on)
-                    {
-                        SetColor(view.DotRenderers[d], trend);
-                    }
-                }
 
                 // Resource cue: totem height/color from food + mana.
                 float foodNorm = Mathf.Clamp01(region.Get(ResourceId.Food) / Mathf.Max(1f, region.Population));
@@ -206,13 +166,6 @@ namespace DivineWorld.Simulation.Presentation
                     SetColor(view.EventRenderer, EventColor(dominant));
                 }
             }
-        }
-
-        static int PopulationToDotCount(float population)
-        {
-            // sqrt mapping, capped. 10k→~10, 40k→~20, 160k→40
-            int n = Mathf.RoundToInt(Mathf.Sqrt(Mathf.Max(0f, population)) / 10f);
-            return Mathf.Clamp(n, 1, MaxDotsPerRegion);
         }
 
         static SimEventType DominantEvent(RegionState region)

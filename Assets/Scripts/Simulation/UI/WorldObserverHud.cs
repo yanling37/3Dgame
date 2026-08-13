@@ -1,23 +1,31 @@
 using DivineWorld.Simulation.Core;
 using DivineWorld.Simulation.Data;
+using DivineWorld.Simulation.Observation;
 using UnityEngine;
 
 namespace DivineWorld.Simulation.UI
 {
     /// <summary>
-    /// Observer HUD for Phase 2: season, per-region influence, fast-forward, consistency test.
+    /// Observer HUD: region information panel plus P2-B observation snapshot.
     /// </summary>
     public class WorldObserverHud : MonoBehaviour
     {
         [SerializeField] SimulationWorld world;
+        [SerializeField] ObservationHost observation;
         [SerializeField] bool visible = true;
 
         Vector2 _scroll;
         string _cachedReport = "";
         int _lastDay = -1;
         bool _subscribed;
+        bool _observationSubscribed;
 
         public void Bind(SimulationWorld simulationWorld)
+        {
+            Bind(simulationWorld, observation);
+        }
+
+        public void Bind(SimulationWorld simulationWorld, ObservationHost observationHost)
         {
             if (world != null && _subscribed)
             {
@@ -25,16 +33,35 @@ namespace DivineWorld.Simulation.UI
                 _subscribed = false;
             }
 
+            if (observation != null && _observationSubscribed)
+            {
+                observation.OnSnapshotUpdated -= OnSnapshot;
+                _observationSubscribed = false;
+            }
+
             world = simulationWorld;
+            observation = observationHost;
             if (world != null)
             {
                 world.OnDayAdvanced += OnDay;
                 _subscribed = true;
-                Refresh();
             }
+
+            if (observation != null)
+            {
+                observation.OnSnapshotUpdated += OnSnapshot;
+                _observationSubscribed = true;
+            }
+
+            Refresh();
         }
 
         void OnDay(WorldState _)
+        {
+            Refresh();
+        }
+
+        void OnSnapshot(WorldObservationSnapshot _)
         {
             Refresh();
         }
@@ -46,9 +73,14 @@ namespace DivineWorld.Simulation.UI
                 world = FindObjectOfType<SimulationWorld>();
             }
 
+            if (observation == null)
+            {
+                observation = FindObjectOfType<ObservationHost>();
+            }
+
             if (world != null && !_subscribed)
             {
-                Bind(world);
+                Bind(world, observation);
             }
         }
 
@@ -57,6 +89,13 @@ namespace DivineWorld.Simulation.UI
             if (world != null && _subscribed)
             {
                 world.OnDayAdvanced -= OnDay;
+                _subscribed = false;
+            }
+
+            if (observation != null && _observationSubscribed)
+            {
+                observation.OnSnapshotUpdated -= OnSnapshot;
+                _observationSubscribed = false;
             }
         }
 
@@ -81,9 +120,10 @@ namespace DivineWorld.Simulation.UI
 
             const float pad = 12f;
             var area = new Rect(pad, pad, Mathf.Min(560f, Screen.width - pad * 2f), Screen.height - pad * 2f);
-            GUI.Box(area, "Divine World · 观察仪 (Phase 2 / 2-A)");
+            GUI.Box(area, ObservationVersion.HudTitle);
 
             GUILayout.BeginArea(new Rect(area.x + 10, area.y + 28, area.width - 20, area.height - 36));
+            GUILayout.Label(ObservationVersion.HudTitle);
 
             GUILayout.BeginHorizontal();
             if (GUILayout.Button(world.AutoRun ? "暂停" : "继续", GUILayout.Width(70)))
@@ -158,6 +198,8 @@ namespace DivineWorld.Simulation.UI
                 GUILayout.Label($"季节 {world.CurrentSeason} | 年 {world.CurrentYear} | 第 {world.DayOfYear} 日 | 季内 {world.DayInSeason}/90");
             }
 
+            DrawRegionObservationPanel();
+
             GUILayout.Space(6);
             GUILayout.Label("速度（秒/日）");
             world.SecondsPerDay = GUILayout.HorizontalSlider(world.SecondsPerDay, 0.05f, 1.5f);
@@ -229,6 +271,33 @@ namespace DivineWorld.Simulation.UI
             }
 
             GUI.backgroundColor = prev;
+        }
+
+        void DrawRegionObservationPanel()
+        {
+            GUILayout.Space(8);
+            GUILayout.Label("地区观察");
+            var snap = observation != null ? observation.Current : null;
+            if (snap == null || snap.Regions == null || snap.Regions.Length == 0)
+            {
+                GUILayout.Label("（等待观察快照）");
+                return;
+            }
+
+            var cfg = PopulationVisualizationConfig.CreateDefault();
+            GUILayout.Label($"快照 年 {snap.Year}  第 {snap.DayOfYear} 日  累计 {snap.TotalDays}  {snap.Season}");
+            for (int i = 0; i < snap.Regions.Length; i++)
+            {
+                var r = snap.Regions[i];
+                if (r == null)
+                {
+                    continue;
+                }
+
+                int markers = PopulationMarkerRules.MarkerCount(r.Population, cfg);
+                GUILayout.Label(
+                    $"{r.DisplayName}  人口 {r.Population:0}  (Δ{r.PopulationDelta:0.00})  标记 {markers}/{cfg.MaxMarkersPerRegion}  粮 {r.Food:0}  水 {r.Water:0}  稳定 {r.Stability:0.00}");
+            }
         }
     }
 }
