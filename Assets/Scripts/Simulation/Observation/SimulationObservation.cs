@@ -44,6 +44,8 @@ namespace DivineWorld.Simulation.Observation
                 SeasonIndex = state.SeasonIndex,
                 DayInSeason = state.DayInSeason,
                 SeasonProgress = state.SeasonProgress,
+                DaysPerYear = SimulationConfig.DaysPerYear,
+                DaysPerSeason = SimulationConfig.DaysPerSeason,
                 HaltedOnNumericError = state.HaltedOnNumericError,
                 LastNumericError = state.LastNumericError,
                 Regions = snaps,
@@ -70,6 +72,8 @@ namespace DivineWorld.Simulation.Observation
                 CarryingCapacity = region.LastCarryingCapacity,
                 Food = region.Get(ResourceId.Food),
                 Water = region.Get(ResourceId.Water),
+                Timber = region.Get(ResourceId.Timber),
+                Ore = region.Get(ResourceId.Ore),
                 Mana = region.Get(ResourceId.Magic),
                 DiseasePressure = region.DiseasePressure,
                 Stability = region.Stability,
@@ -95,12 +99,14 @@ namespace DivineWorld.Simulation.Observation
                 list[i] = new EventObservation
                 {
                     EventId = e.EventId,
+                    DisplayName = ObservationLabels.EventDisplayName(e.EventType),
                     EventType = e.EventType,
                     RegionId = e.RegionId,
                     Scope = e.Scope,
                     StartDay = e.StartDay,
                     Duration = e.Duration,
                     EndDay = e.EndDay,
+                    RemainingDays = System.Math.Max(0, e.EndDay - worldTotalDays),
                     Severity = e.Severity,
                     IsActive = e.IsActiveOn(worldTotalDays)
                 };

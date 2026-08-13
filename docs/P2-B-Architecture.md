@@ -5,7 +5,7 @@
 | 分支 | `cursor/p2b-observation-interface-2738` |
 | 基线 main | `a7b5f91e31243881deef65ea20244f880d42dcdc`（P2-A squash merge） |
 | 冻结协议 | [P2-A Freeze Protocol](P2-A-Freeze-Protocol.md) |
-| 本阶段 | **骨架**：调查 + 只读观察接口 + 历史缓冲结构。不实现完整 UI / 折线图 / 报告 |
+| 本阶段 | **v0.2**：ObservationHost + 地区信息面板 + 地图事件标记 + 可插拔人口可视化接口（规则未定） |
 
 ---
 
@@ -153,7 +153,7 @@ Observation layer (P2-B, NEW — read only)
 | `SimulationObservation` | `Observation/SimulationObservation.cs` | `Capture(WorldState)` 从 State 投影 |
 | `SimulationHistoryBuffer` | `Observation/SimulationHistoryBuffer.cs` | 按 TotalDays 记录 / 采样接口 |
 
-后续接线（下阶段）：在 `SimulationBootstrap` 或独立 `ObservationHost` 订阅 `OnDayAdvanced` → `history.Record(Capture(state))`。本阶段**不改** Bootstrap / Map / HUD，避免半成品耦合。
+后续接线（v0.2 已落地）：`ObservationHost` 订阅 `OnWorldReset` / `OnDayAdvanced` → `Capture` → HUD / Map 只读 snapshot。
 
 ---
 
@@ -198,3 +198,17 @@ Population, Food, Water, Mana(`Magic`), DiseasePressure, Stability, Education, F
 - [x] 只读观察 DTO + Capture + HistoryBuffer  
 - [x] 无头测试：Capture 与 State 一致  
 - [x] **未修改** Population / Resource / Season / Weather / Event / FastForward 数学  
+
+## 9. P2-B v0.2 已落地
+
+```text
+SimulationWorld.State
+    → ObservationHost (OnWorldReset / OnDayAdvanced)
+    → WorldObservationSnapshot
+    → WorldObserverHud（P2-B · Observation v0.2）
+    → MapVisualizationController（地区事件标记；人口视觉规则待定）
+```
+
+- 地区信息面板字段全部来自 snapshot（含木/矿/事件剩余时间）
+- `IRegionPopulationVisualizer` / `PendingRegionPopulationVisualizer`：只读取 `RegionObservationSnapshot.Population`，不发明点数规则
+- 事件标记按 `EventObservation.RegionId` 绑在对应地区

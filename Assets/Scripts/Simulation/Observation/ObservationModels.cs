@@ -19,6 +19,8 @@ namespace DivineWorld.Simulation.Observation
         public int SeasonIndex;
         public int DayInSeason;
         public float SeasonProgress;
+        public int DaysPerYear;
+        public int DaysPerSeason;
         public bool HaltedOnNumericError;
         public string LastNumericError;
         public RegionObservationSnapshot[] Regions = Array.Empty<RegionObservationSnapshot>();
@@ -41,6 +43,8 @@ namespace DivineWorld.Simulation.Observation
         public float CarryingCapacity;
         public float Food;
         public float Water;
+        public float Timber;
+        public float Ore;
         public float Mana;
         public float DiseasePressure;
         public float Stability;
@@ -56,12 +60,14 @@ namespace DivineWorld.Simulation.Observation
     public sealed class EventObservation
     {
         public string EventId;
+        public string DisplayName;
         public SimEventType EventType;
         public RegionId RegionId;
         public SimEventScope Scope;
         public int StartDay;
         public int Duration;
         public int EndDay;
+        public int RemainingDays;
         public float Severity;
         public bool IsActive;
     }

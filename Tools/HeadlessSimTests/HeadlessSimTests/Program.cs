@@ -25,7 +25,10 @@ namespace HeadlessSimTests
                 case "p2b1":
                     Console.WriteLine("Divine World P2-B Observation Tests");
                     Console.WriteLine("==================================");
-                    return P2BObservationPhase1Tests.Run();
+                    int phase1 = P2BObservationPhase1Tests.Run();
+                    Console.WriteLine();
+                    int v02 = ObservationTests.Run();
+                    return phase1 != 0 ? phase1 : v02;
                 case "observation":
                 case "p2b-smoke":
                     Console.WriteLine("Divine World P2-B Observation Tests");
