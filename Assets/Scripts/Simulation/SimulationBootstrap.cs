@@ -1,4 +1,5 @@
 using DivineWorld.Simulation.Core;
+using DivineWorld.Simulation.Observation;
 using DivineWorld.Simulation.Presentation;
 using DivineWorld.Simulation.UI;
 using UnityEngine;
@@ -15,12 +16,19 @@ namespace DivineWorld.Simulation
         [SerializeField] bool createMapVisualization = true;
         [SerializeField] bool createHud = true;
 
+        ObservationHost _observation;
+
         void Awake()
         {
             EnsureCamera();
 
             var worldGo = new GameObject("SimulationWorld");
             var world = worldGo.AddComponent<SimulationWorld>();
+
+            _observation = new ObservationHost();
+            world.OnWorldReset += _observation.HandleWorldReset;
+            world.OnDayAdvanced += _observation.HandleDayAdvanced;
+            _observation.HandleWorldReset(world.State);
 
             if (createHud)
             {

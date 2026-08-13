@@ -46,6 +46,12 @@ namespace DivineWorld.Simulation.Core
 
         public event Action<WorldState> OnDayAdvanced;
 
+        /// <summary>
+        /// Fired after a new WorldState is created by ResetWorld, before presentation refresh.
+        /// ObservationHost uses this to Clear history and record Day 0. Not a math callback.
+        /// </summary>
+        public event Action<WorldState> OnWorldReset;
+
         System.Random _rng;
         float _dayTimer;
 
@@ -84,6 +90,7 @@ namespace DivineWorld.Simulation.Core
             SeasonSystem.SyncFromCalendar(State);
             _dayTimer = 0f;
             LastConsistencyReport = "";
+            OnWorldReset?.Invoke(State);
             OnDayAdvanced?.Invoke(State);
         }
 

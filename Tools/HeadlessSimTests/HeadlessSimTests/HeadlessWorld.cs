@@ -1,3 +1,4 @@
+using System;
 using DivineWorld.Simulation.Core;
 using DivineWorld.Simulation.Data;
 using DivineWorld.Simulation.Player;
@@ -6,7 +7,8 @@ using DivineWorld.Simulation.Systems;
 namespace HeadlessSimTests
 {
     /// <summary>
-    /// MonoBehaviour-free world runner for headless P2-A validation.
+    /// MonoBehaviour-free world runner for headless P2-A / P2-B validation.
+    /// Mirrors SimulationWorld reset / day / FastForward lifecycle events (no math changes).
     /// </summary>
     public sealed class HeadlessWorld
     {
@@ -16,6 +18,9 @@ namespace HeadlessSimTests
         public ObserverInfluence Influence { get; private set; }
         public System.Random Rng { get; private set; }
         public int Seed { get; private set; }
+
+        public event Action<WorldState> OnDayAdvanced;
+        public event Action<WorldState> OnWorldReset;
 
         public HeadlessWorld(int seed = 20260810)
         {
@@ -32,11 +37,14 @@ namespace HeadlessSimTests
             State.RandomSeed = seed;
             Influence = new ObserverInfluence();
             Influence.Bind(State);
+            OnWorldReset?.Invoke(State);
+            OnDayAdvanced?.Invoke(State);
         }
 
         public void AdvanceDay()
         {
             DailySimulation.SimulateDay(State, Races, Config, Rng);
+            OnDayAdvanced?.Invoke(State);
         }
 
         public void AdvanceDays(int days)
@@ -54,6 +62,19 @@ namespace HeadlessSimTests
         public FastForwardSystem.Result FastForwardDays(int days)
         {
             return FastForwardSystem.FastForwardToTotalDay(State, Races, Config, State.TotalDays + days);
+        }
+
+        /// <summary>
+        /// Same contract as SimulationWorld.FastForwardYears: replace State, then raise OnDayAdvanced.
+        /// </summary>
+        public FastForwardSystem.Result FastForwardYears(int years)
+        {
+            var result = FastForwardSystem.FastForwardYears(State, Races, Config, years);
+            State = result.State;
+            Influence.Bind(State);
+            SeasonSystem.SyncFromCalendar(State);
+            OnDayAdvanced?.Invoke(State);
+            return result;
         }
 
         public RegionState Region(RegionId id) => RegionLookup.FindRegion(State.Regions, id);
