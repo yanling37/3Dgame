@@ -216,8 +216,7 @@ namespace DivineWorld.Simulation.UI
 
         static Font BuiltinFont()
         {
-            var font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            return font != null ? font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            return Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         }
 
         static Sprite WhiteSprite()
