@@ -7,6 +7,7 @@ namespace DivineWorld.Simulation.UI
     /// <summary>
     /// P2-B Observation v0.2 HUD. Display values come only from ObservationHost snapshots.
     /// SimulationWorld is used solely for player controls (advance / reset / influence).
+    /// Region details scroll inside a dedicated ScrollRect, not the whole screen.
     /// </summary>
     public class WorldObserverHud : MonoBehaviour
     {
@@ -14,38 +15,77 @@ namespace DivineWorld.Simulation.UI
         [SerializeField] bool visible = true;
 
         ObservationHost _observation;
-        Vector2 _scroll;
+        RegionObservationScrollView _regionScroll;
 
         public void Bind(SimulationWorld simulationWorld, ObservationHost observation)
         {
             world = simulationWorld;
             _observation = observation;
+            EnsureRegionScroll();
         }
 
         void OnGUI()
         {
             if (!visible || world == null)
             {
+                if (_regionScroll != null)
+                {
+                    _regionScroll.gameObject.SetActive(false);
+                }
+
                 return;
             }
 
+            if (_regionScroll != null)
+            {
+                _regionScroll.gameObject.SetActive(true);
+            }
+
             const float pad = 12f;
-            var area = new Rect(pad, pad, Mathf.Min(520f, Screen.width - pad * 2f), Screen.height - pad * 2f);
-            var snap = _observation != null ? _observation.Current : null;
-            GUI.Box(area, ObservationLabels.UiVersion);
+            float hudW = Mathf.Min(520f, Screen.width - pad * 2f);
+            const float topH = 278f;
+            const float bottomH = 228f;
+            float midH = Mathf.Max(180f, Screen.height - pad * 2f - topH - bottomH);
+            float midY = pad + topH;
 
-            GUILayout.BeginArea(new Rect(area.x + 10, area.y + 28, area.width - 20, area.height - 36));
-            _scroll = GUILayout.BeginScrollView(_scroll);
-
-            DrawWorldHeader(snap);
+            GUI.Box(new Rect(pad, pad, hudW, topH), ObservationLabels.UiVersion);
+            GUILayout.BeginArea(new Rect(pad + 10f, pad + 28f, hudW - 20f, topH - 36f));
+            DrawWorldHeader(_observation != null ? _observation.Current : null);
             DrawHistoryStatus();
             DrawControls();
             DrawRegionTabs();
-            DrawRegionPanel(snap);
-            DrawInfluence();
-
-            GUILayout.EndScrollView();
+            GUILayout.Label("—— 地区信息 ——");
             GUILayout.EndArea();
+
+            EnsureRegionScroll();
+            if (_regionScroll != null)
+            {
+                _regionScroll.SetImguiRect(new Rect(pad, midY, hudW, midH));
+            }
+
+            GUI.Box(new Rect(pad, midY + midH, hudW, bottomH), "");
+            GUILayout.BeginArea(new Rect(pad + 10f, midY + midH + 8f, hudW - 20f, bottomH - 16f));
+            DrawInfluence();
+            GUILayout.EndArea();
+        }
+
+        void EnsureRegionScroll()
+        {
+            if (_regionScroll != null || _observation == null)
+            {
+                return;
+            }
+
+            _regionScroll = RegionObservationScrollView.Create(_observation);
+        }
+
+        void OnDestroy()
+        {
+            if (_regionScroll != null)
+            {
+                Destroy(_regionScroll.gameObject);
+                _regionScroll = null;
+            }
         }
 
         void DrawWorldHeader(WorldObservationSnapshot snap)
@@ -144,14 +184,6 @@ namespace DivineWorld.Simulation.UI
             GUILayout.EndHorizontal();
         }
 
-        void DrawRegionPanel(WorldObservationSnapshot snap)
-        {
-            GUILayout.Space(8);
-            GUILayout.Label("—— 地区信息 ——");
-            var region = _observation != null ? _observation.SelectedRegion : null;
-            GUILayout.TextArea(ObservationPanelText.FormatRegionPanel(snap, region), GUILayout.MinHeight(220f));
-        }
-
         void DrawInfluence()
         {
             if (world?.Influence == null)
@@ -159,7 +191,6 @@ namespace DivineWorld.Simulation.UI
                 return;
             }
 
-            GUILayout.Space(8);
             GUILayout.Label("注视微调（写入模拟 Influence，非观察重算）");
             var inf = world.Influence;
             GUILayout.Label($"生育祝福 ×{inf.FertilityBlessing:0.00}");
