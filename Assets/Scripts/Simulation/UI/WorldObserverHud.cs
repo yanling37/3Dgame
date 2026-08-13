@@ -1,4 +1,5 @@
 using DivineWorld.Simulation.Core;
+using DivineWorld.Simulation.Data;
 using DivineWorld.Simulation.Observation;
 using UnityEngine;
 
@@ -16,6 +17,8 @@ namespace DivineWorld.Simulation.UI
 
         ObservationHost _observation;
         RegionObservationScrollView _regionScroll;
+        bool _blessAllRegions;
+        RegionId _lastSelectedRegion;
 
         public void Bind(SimulationWorld simulationWorld, ObservationHost observation)
         {
@@ -157,6 +160,7 @@ namespace DivineWorld.Simulation.UI
             GUILayout.Space(8);
             GUILayout.Label("选中地区");
             GUILayout.BeginHorizontal();
+            DrawBlessScopeButton("全域", global: true, highlight: _blessAllRegions);
             var regions = _observation.Current.Regions;
             for (int i = 0; i < regions.Length; i++)
             {
@@ -166,22 +170,59 @@ namespace DivineWorld.Simulation.UI
                     continue;
                 }
 
-                bool on = _observation.SelectedRegionId == region.RegionId;
-                var prev = GUI.backgroundColor;
-                if (on)
-                {
-                    GUI.backgroundColor = new Color(0.6f, 0.85f, 1f);
-                }
-
-                if (GUILayout.Button(region.DisplayName, GUILayout.Height(28)))
-                {
-                    _observation.SelectRegion(region.RegionId);
-                }
-
-                GUI.backgroundColor = prev;
+                bool on = !_blessAllRegions && _observation.SelectedRegionId == region.RegionId;
+                DrawRegionSelectButton(region.DisplayName, region.RegionId, on);
             }
 
             GUILayout.EndHorizontal();
+        }
+
+        void DrawBlessScopeButton(string label, bool global, bool highlight)
+        {
+            var prev = GUI.backgroundColor;
+            if (highlight)
+            {
+                GUI.backgroundColor = new Color(0.6f, 0.85f, 1f);
+            }
+
+            if (GUILayout.Button(label, GUILayout.Height(28)))
+            {
+                _blessAllRegions = global;
+                if (!global)
+                {
+                    return;
+                }
+
+                if (world?.Influence != null)
+                {
+                    world.Influence.FocusRegion = null;
+                    world.Influence.PullFromFocus();
+                }
+            }
+
+            GUI.backgroundColor = prev;
+        }
+
+        void DrawRegionSelectButton(string label, RegionId regionId, bool highlight)
+        {
+            var prev = GUI.backgroundColor;
+            if (highlight)
+            {
+                GUI.backgroundColor = new Color(0.6f, 0.85f, 1f);
+            }
+
+            if (GUILayout.Button(label, GUILayout.Height(28)))
+            {
+                _blessAllRegions = false;
+                _observation.SelectRegion(regionId);
+                if (world?.Influence != null)
+                {
+                    world.Influence.FocusRegion = regionId;
+                    world.Influence.PullFromFocus();
+                }
+            }
+
+            GUI.backgroundColor = prev;
         }
 
         void DrawInfluence()
@@ -191,8 +232,13 @@ namespace DivineWorld.Simulation.UI
                 return;
             }
 
-            GUILayout.Label("注视微调（写入模拟 Influence，非观察重算）");
+            GUILayout.Label(_blessAllRegions
+                ? "祝福目标: 全域（同时写入三个地区）"
+                : $"祝福目标: {_observation.SelectedRegionId}（仅该地区）");
             var inf = world.Influence;
+            SyncInfluenceFocus(inf);
+            inf.PullFromFocus();
+
             GUILayout.Label($"生育祝福 ×{inf.FertilityBlessing:0.00}");
             float fert = GUILayout.HorizontalSlider(inf.FertilityBlessing, 0.7f, 1.3f);
             GUILayout.Label($"收成祝福 ×{inf.HarvestBlessing:0.00}");
@@ -218,6 +264,23 @@ namespace DivineWorld.Simulation.UI
             {
                 inf.ResetSoft();
             }
+        }
+
+        void SyncInfluenceFocus(DivineWorld.Simulation.Player.ObserverInfluence inf)
+        {
+            if (_observation == null || inf == null)
+            {
+                return;
+            }
+
+            var selected = _observation.SelectedRegionId;
+            if (selected != _lastSelectedRegion)
+            {
+                _lastSelectedRegion = selected;
+                _blessAllRegions = false;
+            }
+
+            inf.FocusRegion = _blessAllRegions ? (RegionId?)null : selected;
         }
     }
 }

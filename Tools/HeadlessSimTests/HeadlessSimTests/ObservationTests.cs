@@ -27,8 +27,9 @@ namespace HeadlessSimTests
             Run("V02_NoNaNOrInfinity", V02_NoNaNOrInfinity, failures);
             Run("V02_PopulationVisualizerReadsSnapshotOnly", V02_PopulationVisualizerReadsSnapshotOnly, failures);
             Run("V02_P2AFreeze_CaptureStillMirrorsState", V02_P2AFreeze_CaptureStillMirrorsState, failures);
+            Run("V02_RegionBlessingsIndependent", V02_RegionBlessingsIndependent, failures);
 
-            int total = 14;
+            int total = 15;
             Console.WriteLine();
             Console.WriteLine($"Observation Result: {total - failures.Count}/{total} passed");
             foreach (var f in failures)
@@ -314,6 +315,31 @@ namespace HeadlessSimTests
                 AssertTrue(Math.Abs(s.Population - r.Population) < 1e-4f, "freeze: pop still from state");
                 AssertTrue(Math.Abs(s.Food - r.Get(ResourceId.Food)) < 1e-4f, "freeze: food still from state");
             }
+        }
+
+        static void V02_RegionBlessingsIndependent()
+        {
+            var world = new HeadlessWorld(20260810);
+            world.Influence.Bind(world.State);
+
+            world.Region(RegionId.Theocracy).Influence.FertilityBlessing = 1.30f;
+            world.Region(RegionId.Empire).Influence.FertilityBlessing = 0.70f;
+            world.Region(RegionId.Sea).Influence.FertilityBlessing = 1.00f;
+
+            world.Influence.FocusRegion = RegionId.Theocracy;
+            world.Influence.PullFromFocus();
+            AssertTrue(Math.Abs(world.Influence.FertilityBlessing - 1.30f) < 1e-4f, "slider mirrors Theocracy");
+            world.Influence.PushToFocus();
+
+            world.AdvanceDay();
+
+            AssertTrue(Math.Abs(world.Region(RegionId.Theocracy).Influence.FertilityBlessing - 1.30f) < 1e-4f, "Theocracy 1.30 after 1 day");
+            AssertTrue(Math.Abs(world.Region(RegionId.Empire).Influence.FertilityBlessing - 0.70f) < 1e-4f, "Empire 0.70 after 1 day");
+            AssertTrue(Math.Abs(world.Region(RegionId.Sea).Influence.FertilityBlessing - 1.00f) < 1e-4f, "Sea 1.00 after 1 day");
+
+            world.Influence.FocusRegion = RegionId.Empire;
+            world.Influence.PullFromFocus();
+            AssertTrue(Math.Abs(world.Influence.FertilityBlessing - 0.70f) < 1e-4f, "slider shows Empire own value");
         }
 
         static ObservationHost HubFromFreshWorld()
