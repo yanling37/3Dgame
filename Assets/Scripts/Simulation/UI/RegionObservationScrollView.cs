@@ -1,3 +1,4 @@
+using DivineWorld.Simulation.Data;
 using DivineWorld.Simulation.Observation;
 using UnityEngine;
 using UnityEngine.EventSystems;
