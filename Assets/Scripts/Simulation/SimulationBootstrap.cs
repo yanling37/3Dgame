@@ -34,7 +34,7 @@ namespace DivineWorld.Simulation
             {
                 var hudGo = new GameObject("WorldObserverHud");
                 var hud = hudGo.AddComponent<WorldObserverHud>();
-                hud.Bind(world);
+                hud.Bind(world, _observation);
             }
 
             if (createMapVisualization)

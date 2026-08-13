@@ -1,5 +1,6 @@
 using DivineWorld.Simulation.Core;
 using DivineWorld.Simulation.Data;
+using DivineWorld.Simulation.Observation;
 using UnityEngine;
 
 namespace DivineWorld.Simulation.UI
@@ -12,12 +13,13 @@ namespace DivineWorld.Simulation.UI
         [SerializeField] SimulationWorld world;
         [SerializeField] bool visible = true;
 
+        ObservationHost _observation;
         Vector2 _scroll;
         string _cachedReport = "";
         int _lastDay = -1;
         bool _subscribed;
 
-        public void Bind(SimulationWorld simulationWorld)
+        public void Bind(SimulationWorld simulationWorld, ObservationHost observation = null)
         {
             if (world != null && _subscribed)
             {
@@ -26,6 +28,7 @@ namespace DivineWorld.Simulation.UI
             }
 
             world = simulationWorld;
+            _observation = observation;
             if (world != null)
             {
                 world.OnDayAdvanced += OnDay;
@@ -81,9 +84,18 @@ namespace DivineWorld.Simulation.UI
 
             const float pad = 12f;
             var area = new Rect(pad, pad, Mathf.Min(560f, Screen.width - pad * 2f), Screen.height - pad * 2f);
-            GUI.Box(area, "Divine World · 观察仪 (Phase 2 / 2-A)");
+            GUI.Box(area, "Divine World · 观察仪 (P2-B · Observation v0.1)");
 
             GUILayout.BeginArea(new Rect(area.x + 10, area.y + 28, area.width - 20, area.height - 36));
+
+            if (_observation != null)
+            {
+                var hist = _observation.History;
+                var latest = hist.Latest;
+                int latestDays = latest != null ? latest.TotalDays : -1;
+                string has30 = hist.TryGetExact(30) != null ? "yes" : "no";
+                GUILayout.Label($"History {hist.Count} samples | latest TotalDays={latestDays} | Day30={has30}");
+            }
 
             GUILayout.BeginHorizontal();
             if (GUILayout.Button(world.AutoRun ? "暂停" : "继续", GUILayout.Width(70)))

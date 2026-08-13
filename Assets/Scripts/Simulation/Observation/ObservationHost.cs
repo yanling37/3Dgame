@@ -1,4 +1,5 @@
 using DivineWorld.Simulation.Data;
+using UnityEngine;
 
 namespace DivineWorld.Simulation.Observation
 {
@@ -25,6 +26,9 @@ namespace DivineWorld.Simulation.Observation
         {
             History.Clear();
             RecordCurrent(state);
+            Debug.Log("[P2-B Observation] Reset: history cleared, Day 0 recorded"
+                + " samples=" + History.Count
+                + " TotalDays=" + (state != null ? state.TotalDays : -1));
         }
 
         /// <summary>
