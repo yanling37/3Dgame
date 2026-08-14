@@ -49,5 +49,6 @@ FastForwardYears(n)
 
 - `ObservationHost` → `RegionObservationSnapshot` → `PopulationVisualizer`：参数化人口占位点（每区最多 `MaxMarkersPerRegion`）
 - `ObservationSession.History` → `RegionHistoryBuffer`：按模拟 Tick 从 snapshot 记录地区历史（P2-B v0.4）
-- `HistoryTrendHud`：地区 / 指标 / 时间范围趋势图与事件标记（只读 History，不改模拟）
+- `HistoryTrendHud`：Single Region 历史/报告 + Compare Regions 同指标三地区对比（P2-B v0.5）
+- `ResourceNodeState` / `ResourceNodeVisualizer`：Food/Water/Wood/Mineral/Magic 占位节点，绑定 ObservationSnapshot（P2-B v0.5）
 - `MapVisualizationController`：资源图腾、事件色点

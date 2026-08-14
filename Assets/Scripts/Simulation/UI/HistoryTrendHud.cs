@@ -4,33 +4,51 @@ using UnityEngine;
 
 namespace DivineWorld.Simulation.UI
 {
+    public enum ObservationViewMode
+    {
+        SingleRegion = 0,
+        CompareRegions = 1
+    }
+
     /// <summary>
-    /// P2-B v0.4 History / Trend panel. Reads ObservationHistory only.
-    /// Chart rebuilds when region, metric, range, or history revision changes — not every frame.
+    /// P2-B v0.5 History / Report / Compare panel. Reads ObservationHistory only.
+    /// Rebuilds when region, metric, range, mode, period, or history revision changes.
     /// </summary>
     public class HistoryTrendHud : MonoBehaviour
     {
         [SerializeField] ObservationHost observation;
         [SerializeField] bool visible = true;
 
+        ObservationViewMode _mode = ObservationViewMode.SingleRegion;
         RegionId _region = RegionId.Theocracy;
         HistoryMetric _metric = HistoryMetric.Population;
         HistoryTimeRange _range = HistoryTimeRange.Recent1Year;
+        ReportPeriod _period = ReportPeriod.Year;
         Vector2 _scroll;
+
         TrendSeries _series = TrendSeries.Empty;
+        RegionCompare _compare;
+        RegionReport _report;
         int _cachedRevision = int.MinValue;
+        int _cachedTotalDays = int.MinValue;
+        ObservationViewMode _cachedMode;
         RegionId _cachedRegion;
         HistoryMetric _cachedMetric;
         HistoryTimeRange _cachedRange;
+        ReportPeriod _cachedPeriod;
 
-        static readonly HistoryMetric[] Metrics =
+        static readonly HistoryMetric[] ChartMetrics =
         {
             HistoryMetric.Population,
             HistoryMetric.Food,
             HistoryMetric.Water,
+            HistoryMetric.Wood,
+            HistoryMetric.Mineral,
+            HistoryMetric.Magic,
             HistoryMetric.Disease,
             HistoryMetric.Stability,
-            HistoryMetric.Magic
+            HistoryMetric.Education,
+            HistoryMetric.Faith
         };
 
         static readonly HistoryTimeRange[] Ranges =
@@ -60,6 +78,20 @@ namespace DivineWorld.Simulation.UI
             _cachedRevision = int.MinValue;
         }
 
+        void ResetViewState()
+        {
+            _mode = ObservationViewMode.SingleRegion;
+            _region = RegionId.Theocracy;
+            _metric = HistoryMetric.Population;
+            _range = HistoryTimeRange.Recent1Year;
+            _period = ReportPeriod.Year;
+            _scroll = Vector2.zero;
+            _series = TrendSeries.Empty;
+            _compare = null;
+            _report = null;
+            Invalidate();
+        }
+
         void OnGUI()
         {
             if (!visible)
@@ -67,7 +99,7 @@ namespace DivineWorld.Simulation.UI
                 return;
             }
 
-            EnsureSeries();
+            EnsureCaches();
 
             ObservationHudLayout.Compute(Screen.width, out _, out _, out float rightX, out float rightW);
             var area = new Rect(rightX, ObservationHudLayout.Pad, rightW, Screen.height - ObservationHudLayout.Pad * 2f);
@@ -77,8 +109,75 @@ namespace DivineWorld.Simulation.UI
             _scroll = GUILayout.BeginScrollView(_scroll);
 
             GUILayout.Label(ObservationVersion.HudTitle);
-            GUILayout.Label("History / Trend");
+            GUILayout.Label("History / Report / Compare");
 
+            GUILayout.Space(4);
+            GUILayout.BeginHorizontal();
+            ModeBtn("Single Region", ObservationViewMode.SingleRegion);
+            ModeBtn("Compare Regions", ObservationViewMode.CompareRegions);
+            GUILayout.EndHorizontal();
+
+            if (_mode == ObservationViewMode.SingleRegion)
+            {
+                DrawSingle();
+            }
+            else
+            {
+                DrawCompare();
+            }
+
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+
+        void EnsureCaches()
+        {
+            var history = observation != null ? observation.Session.History : null;
+            int revision = history != null ? history.Revision : -1;
+            int totalDays = history != null ? history.LastTotalDays : -1;
+
+            if (_cachedTotalDays > 0 && totalDays < _cachedTotalDays)
+            {
+                ResetViewState();
+                revision = history != null ? history.Revision : -1;
+                totalDays = history != null ? history.LastTotalDays : -1;
+            }
+
+            if (_series != null
+                && revision == _cachedRevision
+                && _mode == _cachedMode
+                && _region == _cachedRegion
+                && _metric == _cachedMetric
+                && _range == _cachedRange
+                && _period == _cachedPeriod)
+            {
+                return;
+            }
+
+            _cachedRevision = revision;
+            _cachedTotalDays = totalDays;
+            _cachedMode = _mode;
+            _cachedRegion = _region;
+            _cachedMetric = _metric;
+            _cachedRange = _range;
+            _cachedPeriod = _period;
+
+            if (history == null)
+            {
+                _series = TrendSeries.Empty;
+                _compare = null;
+                _report = null;
+                return;
+            }
+
+            _series = history.Query(_region, _metric, _range, 360);
+            _compare = history.QueryCompare(_metric, _range, 360);
+            var snap = observation != null ? observation.Current : null;
+            _report = RegionReportBuilder.Build(history, snap, _region, _period);
+        }
+
+        void DrawSingle()
+        {
             GUILayout.Space(4);
             GUILayout.Label("Region");
             GUILayout.BeginHorizontal();
@@ -87,56 +186,54 @@ namespace DivineWorld.Simulation.UI
             RegionBtn("Sea", RegionId.Sea);
             GUILayout.EndHorizontal();
 
-            GUILayout.Space(4);
-            GUILayout.Label("Metric");
-            GUILayout.BeginHorizontal();
-            for (int i = 0; i < Metrics.Length; i++)
-            {
-                MetricBtn(Metrics[i]);
-            }
-
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(4);
-            GUILayout.Label("Time Range");
-            GUILayout.BeginHorizontal();
-            for (int i = 0; i < Ranges.Length; i++)
-            {
-                RangeBtn(Ranges[i]);
-            }
-
-            GUILayout.EndHorizontal();
-
+            DrawMetricButtons();
+            DrawRangeButtons();
             DrawCurrentTime();
-            GUILayout.Space(6);
-            DrawChart();
-            GUILayout.Space(6);
+            DrawChart(new[] { _series }, true);
             DrawEventMarkers();
-
-            GUILayout.EndScrollView();
-            GUILayout.EndArea();
+            DrawReport();
         }
 
-        void EnsureSeries()
+        void DrawCompare()
         {
-            var history = observation != null ? observation.Session.History : null;
-            int revision = history != null ? history.Revision : -1;
-            if (_series != null
-                && revision == _cachedRevision
-                && _region == _cachedRegion
-                && _metric == _cachedMetric
-                && _range == _cachedRange)
+            GUILayout.Space(4);
+            GUILayout.Label("Metric (all regions, same range)");
+            DrawMetricButtons();
+            DrawRangeButtons();
+
+            GUILayout.Space(6);
+            if (_compare == null || !_compare.HasData)
             {
+                GUILayout.Label("Viewing: (no history yet)");
                 return;
             }
 
-            _cachedRevision = revision;
-            _cachedRegion = _region;
-            _cachedMetric = _metric;
-            _cachedRange = _range;
-            _series = history != null
-                ? history.Query(_region, _metric, _range, 360)
-                : TrendSeries.Empty;
+            GUILayout.Label("Shared range: " + _compare.ActualRangeLabel);
+            GUILayout.Label(HistoryMetrics.AxisTitle(_compare.Metric));
+            GUILayout.Space(4);
+
+            DrawCompareTable();
+            DrawChart(_compare.Series, false);
+            GUILayout.Label("Legend: gold Theocracy · blue Empire · teal Sea. Curves are not merged.");
+        }
+
+        void DrawCompareTable()
+        {
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label(_compare.Metric + "  current");
+            DrawCompareRow(RegionId.Theocracy);
+            DrawCompareRow(RegionId.Empire);
+            DrawCompareRow(RegionId.Sea);
+            GUILayout.EndVertical();
+        }
+
+        void DrawCompareRow(RegionId id)
+        {
+            var series = _compare.For(id);
+            string value = series.HasData
+                ? HistoryMetrics.FormatValue(_compare.Metric, _compare.Current(id))
+                : "—";
+            GUILayout.Label(id.ToString().PadRight(12) + "  " + value + "  " + HistoryMetrics.UnitLabel(_compare.Metric));
         }
 
         void DrawCurrentTime()
@@ -156,191 +253,15 @@ namespace DivineWorld.Simulation.UI
             GUILayout.Label("Region " + _series.RegionId + "  ·  " + HistoryMetrics.AxisTitle(_series.Metric));
         }
 
-        void DrawChart()
+        void DrawChart(TrendSeries[] series, bool drawEvents)
         {
             GUILayout.Space(4);
-            float chartH = Mathf.Clamp(Screen.height * 0.42f, 260f, 380f);
-            var reserved = GUILayoutUtility.GetRect(10f, chartH, GUILayout.ExpandWidth(true), GUILayout.MinHeight(240f));
+            float chartH = Mathf.Clamp(Screen.height * 0.38f, 240f, 360f);
+            var reserved = GUILayoutUtility.GetRect(10f, chartH, GUILayout.ExpandWidth(true), GUILayout.MinHeight(220f));
             if (Event.current.type == EventType.Repaint)
             {
-                PaintChart(reserved);
+                ObservationChartGui.Paint(reserved, _metric, series, drawEvents);
             }
-        }
-
-        void PaintChart(Rect rect)
-        {
-            FillRect(rect, new Color(0.12f, 0.14f, 0.18f, 0.92f));
-            if (_series == null || !_series.HasData || _series.PlotPoints.Length == 0)
-            {
-                GUI.Label(
-                    new Rect(rect.x + 12f, rect.y + 12f, rect.width - 24f, 24f),
-                    "Waiting for history ticks…",
-                    ObservationHudLayout.ChartTitleStyle);
-                return;
-            }
-
-            float padL = 64f;
-            float padR = 14f;
-            float padT = 28f;
-            float padB = 44f;
-            float plotX = rect.x + padL;
-            float plotY = rect.y + padT;
-            float plotW = Mathf.Max(16f, rect.width - padL - padR);
-            float plotH = Mathf.Max(16f, rect.height - padT - padB);
-            var plot = new Rect(plotX, plotY, plotW, plotH);
-
-            int minDay = _series.FirstTotalDays;
-            int maxDay = _series.LastTotalDays;
-            TrendChartGeometry.ValueRange(_series.PlotPoints, out float minV, out float maxV);
-
-            GUI.Label(
-                new Rect(rect.x + 8f, rect.y + 4f, rect.width - 16f, 20f),
-                HistoryMetrics.AxisTitle(_series.Metric),
-                ObservationHudLayout.ChartTitleStyle);
-
-            var yTicks = new float[8];
-            int yCount = TrendChartGeometry.BuildNiceTicks(minV, maxV, 5, yTicks);
-            var grid = new Color(1f, 1f, 1f, 0.12f);
-            var axis = new Color(0.82f, 0.86f, 0.9f, 0.9f);
-
-            for (int i = 0; i < yCount; i++)
-            {
-                float gy = TrendChartGeometry.MapY(yTicks[i], minV, maxV, plot.y, plot.height);
-                FillRect(new Rect(plot.x, gy, plot.width, 1f), grid);
-                GUI.Label(
-                    new Rect(rect.x + 4f, gy - 8f, padL - 10f, 16f),
-                    HistoryMetrics.FormatValue(_series.Metric, yTicks[i]),
-                    ObservationHudLayout.AxisRightStyle);
-            }
-
-            FillRect(new Rect(plot.x, plot.yMax, plot.width, 1.5f), axis);
-            FillRect(new Rect(plot.x, plot.y, 1.5f, plot.height), axis);
-
-            var points = _series.PlotPoints;
-            var prevColor = GUI.color;
-            GUI.color = new Color(0.45f, 0.75f, 0.95f, 1f);
-            for (int i = 1; i < points.Length; i++)
-            {
-                float x0 = TrendChartGeometry.MapX(points[i - 1].TotalDays, minDay, maxDay, plot.x, plot.width);
-                float y0 = TrendChartGeometry.MapY(points[i - 1].Value, minV, maxV, plot.y, plot.height);
-                float x1 = TrendChartGeometry.MapX(points[i].TotalDays, minDay, maxDay, plot.x, plot.width);
-                float y1 = TrendChartGeometry.MapY(points[i].Value, minV, maxV, plot.y, plot.height);
-                DrawLine(new Vector2(x0, y0), new Vector2(x1, y1), 2f);
-            }
-
-            GUI.color = prevColor;
-
-            var markers = _series.EventMarkers;
-            for (int i = 0; i < markers.Length; i++)
-            {
-                float mx = TrendChartGeometry.MapX(markers[i].MarkerTotalDays, minDay, maxDay, plot.x, plot.width);
-                GUI.color = MarkerColor(markers[i].EventType);
-                FillRect(new Rect(mx, plot.y, 1.5f, plot.height), GUI.color);
-                GUI.DrawTexture(new Rect(mx - 4f, plot.y - 6f, 8f, 8f), Texture2D.whiteTexture);
-            }
-
-            GUI.color = prevColor;
-
-            DrawXAxisLabels(plot, minDay, maxDay);
-
-            DrawHoverTooltip(plot, minDay, maxDay, minV, maxV);
-        }
-
-        void DrawXAxisLabels(Rect plot, int minDay, int maxDay)
-        {
-            var labels = _series.AxisLabels;
-            if (labels == null || labels.Length == 0)
-            {
-                return;
-            }
-
-            float minGap = 76f;
-            DrawOneXLabel(plot, minDay, maxDay, labels[0]);
-            if (labels.Length == 1)
-            {
-                return;
-            }
-
-            float firstX = TrendChartGeometry.MapX(labels[0].TotalDays, minDay, maxDay, plot.x, plot.width);
-            float lastX = TrendChartGeometry.MapX(labels[labels.Length - 1].TotalDays, minDay, maxDay, plot.x, plot.width);
-            float prevX = firstX;
-            for (int i = 1; i < labels.Length - 1; i++)
-            {
-                float lx = TrendChartGeometry.MapX(labels[i].TotalDays, minDay, maxDay, plot.x, plot.width);
-                if (lx - prevX < minGap || lastX - lx < minGap)
-                {
-                    continue;
-                }
-
-                DrawOneXLabel(plot, minDay, maxDay, labels[i]);
-                prevX = lx;
-            }
-
-            if (lastX - firstX >= minGap * 0.5f)
-            {
-                DrawOneXLabel(plot, minDay, maxDay, labels[labels.Length - 1]);
-            }
-        }
-
-        static void DrawOneXLabel(Rect plot, int minDay, int maxDay, TrendAxisLabel label)
-        {
-            float lx = TrendChartGeometry.MapX(label.TotalDays, minDay, maxDay, plot.x, plot.width);
-            var labelRect = new Rect(lx - 38f, plot.yMax + 4f, 76f, 36f);
-            GUI.Label(
-                labelRect,
-                HistoryMetrics.CompactAxisLabel(label.Year, label.DayOfYear),
-                ObservationHudLayout.AxisLabelStyle);
-        }
-
-        void DrawHoverTooltip(Rect plot, int minDay, int maxDay, float minV, float maxV)
-        {
-            Vector2 mouse = Event.current.mousePosition;
-            if (!plot.Contains(mouse) || _series.PlotPoints.Length == 0)
-            {
-                return;
-            }
-
-            var points = _series.PlotPoints;
-            int nearest = 0;
-            float best = float.MaxValue;
-            for (int i = 0; i < points.Length; i++)
-            {
-                float px = TrendChartGeometry.MapX(points[i].TotalDays, minDay, maxDay, plot.x, plot.width);
-                float dist = Mathf.Abs(px - mouse.x);
-                if (dist < best)
-                {
-                    best = dist;
-                    nearest = i;
-                }
-            }
-
-            var p = points[nearest];
-            float hx = TrendChartGeometry.MapX(p.TotalDays, minDay, maxDay, plot.x, plot.width);
-            float hy = TrendChartGeometry.MapY(p.Value, minV, maxV, plot.y, plot.height);
-            FillRect(new Rect(hx - 3.5f, hy - 3.5f, 7f, 7f), new Color(1f, 1f, 1f, 0.95f));
-
-            var season = WorldState.SeasonFromDayOfYear(p.DayOfYear);
-            string text = HistoryMetrics.FormatCalendar(p.Year, season, p.DayOfYear)
-                + "\n"
-                + HistoryMetrics.DisplayName(_series.Metric)
-                + ": "
-                + HistoryMetrics.FormatValue(_series.Metric, p.Value)
-                + " "
-                + HistoryMetrics.UnitLabel(_series.Metric);
-
-            const float tipW = 196f;
-            const float tipH = 44f;
-            float tx = Mathf.Clamp(mouse.x + 12f, plot.x, plot.xMax - tipW);
-            float ty = Mathf.Clamp(mouse.y - tipH - 8f, plot.y, plot.yMax - tipH);
-            GUI.Box(new Rect(tx, ty, tipW, tipH), text, ObservationHudLayout.TooltipStyle);
-        }
-
-        static void FillRect(Rect rect, Color color)
-        {
-            var prev = GUI.color;
-            GUI.color = color;
-            GUI.DrawTexture(rect, Texture2D.whiteTexture);
-            GUI.color = prev;
         }
 
         void DrawEventMarkers()
@@ -367,6 +288,116 @@ namespace DivineWorld.Simulation.UI
             }
         }
 
+        void DrawReport()
+        {
+            GUILayout.Space(10);
+            GUILayout.Label("Region Report");
+            GUILayout.BeginHorizontal();
+            PeriodBtn("Year", ReportPeriod.Year);
+            PeriodBtn("Season", ReportPeriod.Season);
+            GUILayout.EndHorizontal();
+
+            if (_report == null || _report.Lines.Length == 0)
+            {
+                GUILayout.Label("（等待历史数据）");
+                return;
+            }
+
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label(_report.Title);
+            if (!_report.HasPrevious)
+            {
+                GUILayout.Label("Previous period: not enough history (showing current values only)");
+            }
+            else
+            {
+                GUILayout.Label("Compared with TotalDays " + _report.PreviousTotalDays);
+            }
+
+            for (int i = 0; i < _report.Lines.Length; i++)
+            {
+                var line = _report.Lines[i];
+                string change = line.HasPrevious
+                    ? line.TrendMark + " " + line.Percent.ToString("+0.0;-0.0") + "%"
+                    : "n/a";
+                string warn = line.Warning ? "  Warning" : "";
+                GUILayout.Label(
+                    HistoryMetrics.DisplayName(line.Metric)
+                    + "   "
+                    + HistoryMetrics.FormatValue(line.Metric, line.Current)
+                    + "   "
+                    + change
+                    + warn);
+            }
+
+            GUILayout.Space(4);
+            GUILayout.Label("Major events");
+            if (_report.MajorEvents.Length == 0)
+            {
+                GUILayout.Label("（本阶段无重大事件）");
+            }
+            else
+            {
+                for (int i = 0; i < _report.MajorEvents.Length; i++)
+                {
+                    var e = _report.MajorEvents[i];
+                    GUILayout.Label("• " + ObservationEventRecord.DisplayName(e.EventType)
+                        + "  " + e.RegionId
+                        + "  start " + e.StartDay
+                        + "  dur " + e.Duration);
+                }
+            }
+
+            GUILayout.Space(4);
+            GUILayout.Label("Turning points");
+            for (int i = 0; i < _report.TurningPoints.Length; i++)
+            {
+                var t = _report.TurningPoints[i];
+                GUILayout.Label("• " + t.Label + "  " + t.TimeLabel + "  "
+                    + HistoryMetrics.FormatValue(t.Metric, t.Value));
+            }
+
+            GUILayout.EndVertical();
+        }
+
+        void DrawMetricButtons()
+        {
+            GUILayout.Space(4);
+            GUILayout.Label("Metric");
+            GUILayout.BeginHorizontal();
+            for (int i = 0; i < 5 && i < ChartMetrics.Length; i++)
+            {
+                MetricBtn(ChartMetrics[i]);
+            }
+
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            for (int i = 5; i < ChartMetrics.Length; i++)
+            {
+                MetricBtn(ChartMetrics[i]);
+            }
+
+            GUILayout.EndHorizontal();
+        }
+
+        void DrawRangeButtons()
+        {
+            GUILayout.Space(4);
+            GUILayout.Label("Time Range");
+            GUILayout.BeginHorizontal();
+            for (int i = 0; i < Ranges.Length; i++)
+            {
+                RangeBtn(Ranges[i]);
+            }
+
+            GUILayout.EndHorizontal();
+        }
+
+        void ModeBtn(string label, ObservationViewMode mode)
+        {
+            Toggle(label, _mode == mode, () => _mode = mode);
+        }
+
         void RegionBtn(string label, RegionId id)
         {
             Toggle(label, _region == id, () => _region = id);
@@ -380,6 +411,11 @@ namespace DivineWorld.Simulation.UI
         void RangeBtn(HistoryTimeRange range)
         {
             Toggle(HistoryMetrics.DisplayName(range), _range == range, () => _range = range);
+        }
+
+        void PeriodBtn(string label, ReportPeriod period)
+        {
+            Toggle(label, _period == period, () => _period = period);
         }
 
         void Toggle(string label, bool on, System.Action select)
@@ -397,33 +433,6 @@ namespace DivineWorld.Simulation.UI
             }
 
             GUI.backgroundColor = prev;
-        }
-
-        static Color MarkerColor(SimEventType type)
-        {
-            switch (type)
-            {
-                case SimEventType.NaturalDisaster: return new Color(1f, 0.55f, 0.2f);
-                case SimEventType.DiseaseOutbreak: return new Color(0.85f, 0.35f, 0.75f);
-                case SimEventType.FoodShortage: return new Color(0.95f, 0.85f, 0.25f);
-                default: return Color.white;
-            }
-        }
-
-        static void DrawLine(Vector2 a, Vector2 b, float thickness)
-        {
-            var d = b - a;
-            float len = Mathf.Sqrt(d.x * d.x + d.y * d.y);
-            if (len < 0.5f)
-            {
-                return;
-            }
-
-            float angle = Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg;
-            var matrix = GUI.matrix;
-            GUIUtility.RotateAroundPivot(angle, a);
-            GUI.DrawTexture(new Rect(a.x, a.y - thickness * 0.5f, len, thickness), Texture2D.whiteTexture);
-            GUI.matrix = matrix;
         }
     }
 }

@@ -37,7 +37,7 @@ namespace HeadlessSimTests
             Console.WriteLine("============================================================");
 
             var failures = new List<string>();
-            Run("HudTitle_Is_v0.4", TestHudTitle, failures);
+            Run("HudTitle_Is_v0.5", TestHudTitle, failures);
             Run("Snapshot_CopiesPopulationExactly", TestSnapshotCopiesPopulation, failures);
             Run("Snapshot_IsIndependentCopy", TestSnapshotIsCopy, failures);
             Run("Visualizer_MatchesSnapshot", TestVisualizerMatchesSnapshot, failures);
@@ -95,8 +95,8 @@ namespace HeadlessSimTests
 
         static void TestHudTitle()
         {
-            AssertTrue(ObservationVersion.HudTitle == "P2-B · Observation v0.4", ObservationVersion.HudTitle);
-            AssertTrue(ObservationVersion.Number == "v0.4", ObservationVersion.Number);
+            AssertTrue(ObservationVersion.HudTitle == "P2-B · Observation v0.5", ObservationVersion.HudTitle);
+            AssertTrue(ObservationVersion.Number == "v0.5", ObservationVersion.Number);
         }
 
         static void TestSnapshotCopiesPopulation()

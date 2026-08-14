@@ -10,7 +10,12 @@ namespace DivineWorld.Simulation.Observation
         Water = 2,
         Disease = 3,
         Stability = 4,
-        Magic = 5
+        Magic = 5,
+        Wood = 6,
+        Mineral = 7,
+        Education = 8,
+        Faith = 9,
+        CarryingCapacity = 10
     }
 
     public enum HistoryTimeRange
@@ -75,6 +80,11 @@ namespace DivineWorld.Simulation.Observation
                 case HistoryMetric.Disease: return "Disease";
                 case HistoryMetric.Stability: return "Stability";
                 case HistoryMetric.Magic: return "Magic";
+                case HistoryMetric.Wood: return "Wood";
+                case HistoryMetric.Mineral: return "Mineral";
+                case HistoryMetric.Education: return "Education";
+                case HistoryMetric.Faith: return "Faith";
+                case HistoryMetric.CarryingCapacity: return "Carrying Capacity";
                 default: return metric.ToString();
             }
         }
@@ -105,11 +115,16 @@ namespace DivineWorld.Simulation.Observation
             switch (metric)
             {
                 case HistoryMetric.Population: return "people";
+                case HistoryMetric.CarryingCapacity: return "people";
                 case HistoryMetric.Food: return "stock";
                 case HistoryMetric.Water: return "stock";
+                case HistoryMetric.Wood: return "stock";
+                case HistoryMetric.Mineral: return "stock";
+                case HistoryMetric.Magic: return "stock";
                 case HistoryMetric.Disease: return "pressure";
                 case HistoryMetric.Stability: return "index";
-                case HistoryMetric.Magic: return "stock";
+                case HistoryMetric.Education: return "index";
+                case HistoryMetric.Faith: return "index";
                 default: return string.Empty;
             }
         }
@@ -127,9 +142,12 @@ namespace DivineWorld.Simulation.Observation
             switch (metric)
             {
                 case HistoryMetric.Population:
+                case HistoryMetric.CarryingCapacity:
                     return value.ToString("N0");
                 case HistoryMetric.Disease:
                 case HistoryMetric.Stability:
+                case HistoryMetric.Education:
+                case HistoryMetric.Faith:
                     return value.ToString("0.00");
                 default:
                     return value >= 1000f ? value.ToString("N0") : value.ToString("0.##");
@@ -156,6 +174,11 @@ namespace DivineWorld.Simulation.Observation
                 case HistoryMetric.Disease: return region.Disease;
                 case HistoryMetric.Stability: return region.Stability;
                 case HistoryMetric.Magic: return region.Magic;
+                case HistoryMetric.Wood: return region.Wood;
+                case HistoryMetric.Mineral: return region.Mineral;
+                case HistoryMetric.Education: return region.Education;
+                case HistoryMetric.Faith: return region.Faith;
+                case HistoryMetric.CarryingCapacity: return region.CarryingCapacity;
                 default: return 0f;
             }
         }

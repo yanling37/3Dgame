@@ -52,6 +52,7 @@ namespace DivineWorld.Simulation.Observation
                     0f,
                     0f,
                     0f,
+                    0f,
                     ObservationEventRecord.None);
             }
 
@@ -71,6 +72,7 @@ namespace DivineWorld.Simulation.Observation
                 region.DiseasePressure,
                 region.Education,
                 region.FaithLevel,
+                region.LastWaterCapacity,
                 CopyEvents(region));
         }
 

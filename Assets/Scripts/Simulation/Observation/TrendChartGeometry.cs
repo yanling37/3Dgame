@@ -62,6 +62,56 @@ namespace DivineWorld.Simulation.Observation
                 if (v > max) max = v;
             }
 
+            PadRange(ref min, ref max);
+        }
+
+        public static void ValueRange(TrendSeries[] series, out float min, out float max)
+        {
+            min = 0f;
+            max = 1f;
+            bool any = false;
+            if (series == null)
+            {
+                return;
+            }
+
+            for (int s = 0; s < series.Length; s++)
+            {
+                var points = series[s] != null ? series[s].PlotPoints : null;
+                if (points == null)
+                {
+                    continue;
+                }
+
+                for (int i = 0; i < points.Length; i++)
+                {
+                    float v = points[i].Value;
+                    if (!any)
+                    {
+                        min = v;
+                        max = v;
+                        any = true;
+                    }
+                    else
+                    {
+                        if (v < min) min = v;
+                        if (v > max) max = v;
+                    }
+                }
+            }
+
+            if (!any)
+            {
+                min = 0f;
+                max = 1f;
+                return;
+            }
+
+            PadRange(ref min, ref max);
+        }
+
+        static void PadRange(ref float min, ref float max)
+        {
             if (max <= min)
             {
                 float pad = min == 0f ? 1f : (min < 0f ? -min * 0.08f : min * 0.08f);
