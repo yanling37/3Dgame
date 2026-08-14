@@ -32,6 +32,10 @@ namespace DivineWorld.Simulation
                 var hudGo = new GameObject("WorldObserverHud");
                 var hud = hudGo.AddComponent<WorldObserverHud>();
                 hud.Bind(world, observation);
+
+                var historyGo = new GameObject("HistoryTrendHud");
+                var historyHud = historyGo.AddComponent<HistoryTrendHud>();
+                historyHud.Bind(observation);
             }
 
             if (createMapVisualization)
@@ -50,7 +54,7 @@ namespace DivineWorld.Simulation
                 pop.Bind(observation);
             }
 
-            Debug.Log("[DivineWorld] " + ObservationVersion.HudTitle + " started (observation snapshot → population markers).");
+            Debug.Log("[DivineWorld] " + ObservationVersion.HudTitle + " started (observation snapshot → history / trend).");
         }
 
         void EnsureCamera()

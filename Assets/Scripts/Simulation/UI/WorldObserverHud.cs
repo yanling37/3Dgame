@@ -118,8 +118,8 @@ namespace DivineWorld.Simulation.UI
                 return;
             }
 
-            const float pad = 12f;
-            var area = new Rect(pad, pad, Mathf.Min(560f, Screen.width - pad * 2f), Screen.height - pad * 2f);
+            ObservationHudLayout.Compute(Screen.width, out float leftX, out float leftW, out _, out _);
+            var area = new Rect(leftX, ObservationHudLayout.Pad, leftW, Screen.height - ObservationHudLayout.Pad * 2f);
             GUI.Box(area, ObservationVersion.HudTitle);
 
             GUILayout.BeginArea(new Rect(area.x + 10, area.y + 28, area.width - 20, area.height - 36));

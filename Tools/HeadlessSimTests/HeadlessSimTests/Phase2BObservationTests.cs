@@ -33,11 +33,11 @@ namespace HeadlessSimTests
         public static int Run()
         {
             Console.OutputEncoding = Encoding.UTF8;
-            Console.WriteLine("Divine World P2-B v0.3 Observation / Population Visualization");
+            Console.WriteLine("Divine World P2-B v0.3 Observation / Population Visualization (compat)");
             Console.WriteLine("============================================================");
 
             var failures = new List<string>();
-            Run("HudTitle_Is_v0.3", TestHudTitle, failures);
+            Run("HudTitle_Is_v0.4", TestHudTitle, failures);
             Run("Snapshot_CopiesPopulationExactly", TestSnapshotCopiesPopulation, failures);
             Run("Snapshot_IsIndependentCopy", TestSnapshotIsCopy, failures);
             Run("Visualizer_MatchesSnapshot", TestVisualizerMatchesSnapshot, failures);
@@ -95,8 +95,8 @@ namespace HeadlessSimTests
 
         static void TestHudTitle()
         {
-            AssertTrue(ObservationVersion.HudTitle == "P2-B · Observation v0.3", ObservationVersion.HudTitle);
-            AssertTrue(ObservationVersion.Number == "v0.3", ObservationVersion.Number);
+            AssertTrue(ObservationVersion.HudTitle == "P2-B · Observation v0.4", ObservationVersion.HudTitle);
+            AssertTrue(ObservationVersion.Number == "v0.4", ObservationVersion.Number);
         }
 
         static void TestSnapshotCopiesPopulation()
