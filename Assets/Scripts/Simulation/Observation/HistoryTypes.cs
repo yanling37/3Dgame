@@ -95,6 +95,52 @@ namespace DivineWorld.Simulation.Observation
             return "Year " + year + " Day " + dayOfYear;
         }
 
+        public static string FormatCalendar(int year, SeasonId season, int dayOfYear)
+        {
+            return "Year " + year + " · " + season + " · Day " + dayOfYear;
+        }
+
+        public static string UnitLabel(HistoryMetric metric)
+        {
+            switch (metric)
+            {
+                case HistoryMetric.Population: return "people";
+                case HistoryMetric.Food: return "stock";
+                case HistoryMetric.Water: return "stock";
+                case HistoryMetric.Disease: return "pressure";
+                case HistoryMetric.Stability: return "index";
+                case HistoryMetric.Magic: return "stock";
+                default: return string.Empty;
+            }
+        }
+
+        public static string AxisTitle(HistoryMetric metric)
+        {
+            string unit = UnitLabel(metric);
+            return string.IsNullOrEmpty(unit)
+                ? DisplayName(metric)
+                : DisplayName(metric) + " (" + unit + ")";
+        }
+
+        public static string FormatValue(HistoryMetric metric, float value)
+        {
+            switch (metric)
+            {
+                case HistoryMetric.Population:
+                    return value.ToString("N0");
+                case HistoryMetric.Disease:
+                case HistoryMetric.Stability:
+                    return value.ToString("0.00");
+                default:
+                    return value >= 1000f ? value.ToString("N0") : value.ToString("0.##");
+            }
+        }
+
+        public static string CompactAxisLabel(int year, int dayOfYear)
+        {
+            return "Year " + year + "\nDay " + dayOfYear;
+        }
+
         public static float Read(RegionObservationSnapshot region, HistoryMetric metric)
         {
             if (region == null)

@@ -15,7 +15,8 @@ namespace HeadlessSimTests
     /// </summary>
     public static class Phase2BHistoryTests
     {
-        static readonly int[] Checkpoints = { 1, 30, 90, 180, 270, 360 };
+        static readonly int[] Checkpoints = { 0, 1, 30, 90, 180, 270, 360 };
+        static readonly RegionId[] AllRegions = { RegionId.Theocracy, RegionId.Empire, RegionId.Sea };
 
         static readonly (string RelPath, string Sha256)[] FrozenFiles =
         {
@@ -49,18 +50,20 @@ namespace HeadlessSimTests
             Run("Reset_ClearsHistory", TestReset, failures);
             Run("FastForward_RecordsPostState", TestFastForward, failures);
             Run("FastForward_NoDuplicateTotalDays", TestFastForwardNoDuplicates, failures);
+            Run("FastForward_720Days_NoAnomaly", TestFastForward720, failures);
             Run("SnapshotConsistency_AtCapture", TestSnapshotConsistency, failures);
             Run("SnapshotConsistency_PastUnchanged", TestPastHistoryUnchanged, failures);
             Run("ChartX_UsesTotalDaysNotIndex", TestChartXUsesTotalDays, failures);
             Run("NoNaNInfinityOrNegative", TestNoNanInfinityNegative, failures);
             Run("HistoryLongRun_360", TestLongRun360, failures);
+            Run("HistoryLongRun_3600", TestLongRun3600, failures);
             Run("HistoryLongRun_100Years", TestLongRun100Years, failures);
             Run("Query_DoesNotMutateBuffer", TestQueryDoesNotMutate, failures);
             Run("P2A_Freeze_HashesAndNoMutation", TestP2AFreeze, failures);
             Run("ProjectSettings_And_Packages_Unchanged", TestProjectSettingsAndPackagesUnchanged, failures);
 
             Console.WriteLine();
-            const int total = 21;
+            const int total = 23;
             Console.WriteLine($"Result: {total - failures.Count}/{total} passed");
             foreach (var f in failures)
             {
@@ -126,14 +129,16 @@ namespace HeadlessSimTests
             var world = new HeadlessWorld();
             var session = new ObservationSession();
             session.Capture(world.State);
-            int next = 0;
+            AssertAllRegionsAtCurrentDay(session, world, 0);
+
+            int next = 1;
             for (int day = 1; day <= 360; day++)
             {
                 world.AdvanceDay();
                 session.Capture(world.State);
                 if (next < Checkpoints.Length && day == Checkpoints[next])
                 {
-                    AssertCheckpoint(session, world, day);
+                    AssertAllRegionsAtCurrentDay(session, world, day);
                     next++;
                 }
             }
@@ -141,24 +146,37 @@ namespace HeadlessSimTests
             AssertTrue(next == Checkpoints.Length, "all checkpoints visited");
             int count = session.History.Count(RegionId.Theocracy);
             AssertTrue(count == 361, "day0+360 ticks, got " + count);
+            AssertTrue(session.History.Count(RegionId.Empire) == 361, "empire ticks");
+            AssertTrue(session.History.Count(RegionId.Sea) == 361, "sea ticks");
         }
 
-        static void AssertCheckpoint(ObservationSession session, HeadlessWorld world, int day)
+        static void AssertAllRegionsAtCurrentDay(ObservationSession session, HeadlessWorld world, int day)
         {
-            var hist = session.History.Find(RegionId.Empire, world.State.TotalDays);
-            AssertTrue(hist != null, "missing history at day " + day);
-            var snap = session.Current.Find(RegionId.Empire);
-            var live = world.Region(RegionId.Empire);
-            AssertSameMetrics(hist.Region, snap, live, "day " + day + " Empire");
-            Console.WriteLine(
-                "  day " + day
-                + " " + hist.TimeLabel
-                + " Emp pop=" + hist.Region.Population.ToString("0")
-                + " food=" + hist.Region.Food.ToString("0")
-                + " water=" + hist.Region.Water.ToString("0")
-                + " dis=" + hist.Region.Disease.ToString("0.00")
-                + " sta=" + hist.Region.Stability.ToString("0.00")
-                + " mag=" + hist.Region.Magic.ToString("0"));
+            for (int r = 0; r < AllRegions.Length; r++)
+            {
+                AssertCheckpoint(session, world, day, AllRegions[r]);
+            }
+        }
+
+        static void AssertCheckpoint(ObservationSession session, HeadlessWorld world, int day, RegionId regionId)
+        {
+            var hist = session.History.Find(regionId, world.State.TotalDays);
+            AssertTrue(hist != null, "missing history at day " + day + " " + regionId);
+            var snap = session.Current.Find(regionId);
+            var live = world.Region(regionId);
+            AssertSameMetrics(hist.Region, snap, live, "day " + day + " " + regionId);
+            if (regionId == RegionId.Empire)
+            {
+                Console.WriteLine(
+                    "  day " + day
+                    + " " + hist.TimeLabel
+                    + " Emp pop=" + hist.Region.Population.ToString("0")
+                    + " food=" + hist.Region.Food.ToString("0")
+                    + " water=" + hist.Region.Water.ToString("0")
+                    + " dis=" + hist.Region.Disease.ToString("0.00")
+                    + " sta=" + hist.Region.Stability.ToString("0.00")
+                    + " mag=" + hist.Region.Magic.ToString("0"));
+            }
         }
 
         static void TestRegionIsolation()
@@ -209,6 +227,10 @@ namespace HeadlessSimTests
             AssertTrue(sta.Last.Read(HistoryMetric.Stability) == sta.Last.Region.Stability, "stability");
             AssertTrue(mag.Last.Read(HistoryMetric.Magic) == mag.Last.Region.Magic, "magic");
             AssertTrue(pop.Last.Region.Population != pop.Last.Region.Food, "population series is not food");
+            AssertTrue(pop.PlotPoints[pop.PlotPoints.Length - 1].Value == pop.Last.Region.Population, "pop plot uses population");
+            AssertTrue(food.PlotPoints[food.PlotPoints.Length - 1].Value == food.Last.Region.Food, "food plot uses food");
+            AssertTrue(pop.PlotPoints[pop.PlotPoints.Length - 1].Value != food.PlotPoints[food.PlotPoints.Length - 1].Value,
+                "population chart must not show food values");
         }
 
         static void TestTimeRangeSelection()
@@ -230,6 +252,34 @@ namespace HeadlessSimTests
             AssertTrue(d30.FirstTotalDays > d90.FirstTotalDays, "30 starts later than 90");
             AssertTrue(d90.FirstTotalDays > y1.FirstTotalDays, "90 starts later than 1y");
             AssertTrue(d30.RequestedRange == HistoryTimeRange.Recent30Days, "range identity");
+            AssertMonotonicTotalDays(all);
+            AssertMonotonicTotalDays(d30);
+            AssertRangeWithinWindow(d30, 30);
+            AssertRangeWithinWindow(d90, 90);
+            AssertRangeWithinWindow(y1, 360);
+        }
+
+        static void AssertMonotonicTotalDays(TrendSeries series)
+        {
+            for (int i = 1; i < series.Samples.Length; i++)
+            {
+                AssertTrue(series.Samples[i].TotalDays > series.Samples[i - 1].TotalDays,
+                    "time order broken at " + series.Samples[i].TotalDays);
+            }
+        }
+
+        static void AssertRangeWithinWindow(TrendSeries series, int windowDays)
+        {
+            int latest = series.LastTotalDays;
+            int earliestAllowed = latest - windowDays + 1;
+            AssertTrue(series.FirstTotalDays >= earliestAllowed,
+                series.RequestedRange + " read before window start " + series.FirstTotalDays + " < " + earliestAllowed);
+            for (int i = 0; i < series.Samples.Length; i++)
+            {
+                AssertTrue(series.Samples[i].TotalDays >= earliestAllowed
+                    && series.Samples[i].TotalDays <= latest,
+                    "sample outside requested range: " + series.Samples[i].TotalDays);
+            }
         }
 
         static void TestTimeRangeAvailable()
@@ -297,7 +347,9 @@ namespace HeadlessSimTests
             session.Capture(world.State);
 
             AssertTrue(session.History.Count(RegionId.Theocracy) == 1, "history cleared to day 0");
-            AssertTrue(session.History.Find(RegionId.Empire, 90) == null, "pre-reset day 90 must not remain");
+            AssertTrue(session.History.Find(RegionId.Empire, 90) == null, "Find/exact query: pre-reset day 90 must not remain");
+            AssertTrue(session.History.Find(RegionId.Theocracy, 30) == null, "Find/exact query: old day 30 gone");
+            AssertTrue(session.History.Find(RegionId.Sea, 1) == null, "Find/exact query: old day 1 gone");
             AssertTrue(session.History.Find(RegionId.Empire, 0) != null, "new day 0 present");
             AssertTrue(session.History.Find(RegionId.Empire, 0).Region.Population == world.Region(RegionId.Empire).Population,
                 "reset history matches new state");
@@ -347,6 +399,48 @@ namespace HeadlessSimTests
             AssertTrue(session.History.Count(RegionId.Sea) == 2, "day0 + post FF, got " + session.History.Count(RegionId.Sea));
             AssertTrue(session.History.Find(RegionId.Sea, 0) != null, "kept origin");
             AssertTrue(session.History.Find(RegionId.Sea, ff.State.TotalDays) != null, "kept FF end");
+        }
+
+        static void TestFastForward720()
+        {
+            var world = new HeadlessWorld();
+            var session = new ObservationSession();
+            world.Reset();
+            session.Capture(world.State);
+
+            var ff360 = FastForwardSystem.FastForwardYears(world.State, world.Races, world.Config, 1);
+            session.Capture(ff360.State);
+            AssertTrue(ff360.State.TotalDays == 360, "360-day FF clock " + ff360.State.TotalDays);
+            AssertTrue(session.History.Count(RegionId.Empire) == 2, "day0 + 360");
+            AssertSameMetrics(
+                session.History.Find(RegionId.Empire, 360).Region,
+                ObservationCapture.FromWorld(ff360.State).Find(RegionId.Empire),
+                RegionLookup.FindRegion(ff360.State.Regions, RegionId.Empire),
+                "FF360");
+
+            var ff720 = FastForwardSystem.FastForwardYears(ff360.State, world.Races, world.Config, 1);
+            session.Capture(ff720.State);
+            AssertTrue(ff720.State.TotalDays == 720, "720-day FF clock " + ff720.State.TotalDays);
+            AssertTrue(session.History.Count(RegionId.Sea) == 3, "day0 + 360 + 720, got " + session.History.Count(RegionId.Sea));
+            AssertTrue(session.History.Find(RegionId.Theocracy, 0) != null, "kept origin");
+            AssertTrue(session.History.Find(RegionId.Theocracy, 360) != null, "kept 360");
+            AssertTrue(session.History.Find(RegionId.Theocracy, 720) != null, "kept 720");
+            AssertTrue(session.History.Find(RegionId.Empire, 360).TotalDays
+                < session.History.Find(RegionId.Empire, 720).TotalDays, "time order");
+
+            var series = session.History.Query(RegionId.Empire, HistoryMetric.Population, HistoryTimeRange.AllHistory);
+            AssertMonotonicTotalDays(series);
+            AssertSameMetrics(
+                session.History.Find(RegionId.Sea, 720).Region,
+                ObservationCapture.FromWorld(ff720.State).Find(RegionId.Sea),
+                RegionLookup.FindRegion(ff720.State.Regions, RegionId.Sea),
+                "FF720");
+
+            float pop0 = session.History.Find(RegionId.Empire, 0).Region.Population;
+            float pop720 = session.History.Find(RegionId.Empire, 720).Region.Population;
+            AssertTrue(pop720 < pop0 * 1000f, "FF720 population exploded " + pop720);
+            string reason;
+            AssertTrue(!session.History.HasNonFiniteOrNegative(out reason), reason ?? "FF720 bad values");
         }
 
         static void TestSnapshotConsistency()
@@ -411,6 +505,18 @@ namespace HeadlessSimTests
             float xIndex = 180f;
             AssertTrue(Math.Abs(x30 - 30f) < 0.01f, "X must map TotalDays 30 → 30px, got " + x30);
             AssertTrue(Math.Abs(x30 - xIndex) > 50f, "X must not use array index midpoint");
+
+            int[] marks = { 1, 90, 180, 270, 360 };
+            for (int i = 0; i < marks.Length; i++)
+            {
+                float x = TrendChartGeometry.MapX(marks[i], 0, 360, 0f, 360f);
+                AssertTrue(Math.Abs(x - marks[i]) < 0.01f, "X(TotalDays " + marks[i] + ") got " + x);
+                if (i > 0)
+                {
+                    float prev = TrendChartGeometry.MapX(marks[i - 1], 0, 360, 0f, 360f);
+                    AssertTrue(x > prev, "timeline must increase with TotalDays");
+                }
+            }
         }
 
         static void TestNoNanInfinityNegative()
@@ -433,6 +539,30 @@ namespace HeadlessSimTests
             string reason;
             AssertTrue(!session.History.HasNonFiniteOrNegative(out reason), reason ?? "bad");
             AssertTrue(!world.State.HaltedOnNumericError, world.State.LastNumericError ?? "halt");
+        }
+
+        static void TestLongRun3600()
+        {
+            var world = new HeadlessWorld();
+            var session = new ObservationSession();
+            RunDays(world, session, 3600);
+            int perRegion = session.History.Count(RegionId.Theocracy);
+            AssertTrue(perRegion == 3601, "3600-day entries " + perRegion);
+            AssertTrue(session.History.TotalEntryCount() == 3601 * 3, "3 regions");
+            AssertTrue(session.History.Find(RegionId.Empire, 3600) != null, "day 3600 present");
+            AssertTrue(session.History.Find(RegionId.Sea, 3599) != null, "no missing last-but-one");
+            int prev = -1;
+            var all = session.History.Query(RegionId.Empire, HistoryMetric.Water, HistoryTimeRange.AllHistory);
+            for (int i = 0; i < all.Samples.Length; i++)
+            {
+                AssertTrue(all.Samples[i].TotalDays > prev, "duplicate or unordered TotalDays " + all.Samples[i].TotalDays);
+                prev = all.Samples[i].TotalDays;
+            }
+
+            string reason;
+            AssertTrue(!session.History.HasNonFiniteOrNegative(out reason), reason ?? "3600 bad");
+            AssertTrue(!world.State.HaltedOnNumericError, world.State.LastNumericError ?? "halt");
+            Console.WriteLine("  3600d history entries/region=" + perRegion + " total=" + session.History.TotalEntryCount());
         }
 
         static void TestLongRun100Years()
@@ -647,17 +777,30 @@ namespace HeadlessSimTests
 
         static string Sha256File(string path)
         {
-            using (var stream = File.OpenRead(path))
-            using (var sha = SHA256.Create())
+            byte[] raw = File.ReadAllBytes(path);
+            using (var ms = new MemoryStream(raw.Length))
             {
-                byte[] hash = sha.ComputeHash(stream);
-                var sb = new StringBuilder(hash.Length * 2);
-                for (int i = 0; i < hash.Length; i++)
+                for (int i = 0; i < raw.Length; i++)
                 {
-                    sb.Append(hash[i].ToString("x2"));
+                    if (raw[i] == (byte)'\r' && i + 1 < raw.Length && raw[i + 1] == (byte)'\n')
+                    {
+                        continue;
+                    }
+
+                    ms.WriteByte(raw[i]);
                 }
 
-                return sb.ToString();
+                using (var sha = SHA256.Create())
+                {
+                    byte[] hash = sha.ComputeHash(ms.ToArray());
+                    var sb = new StringBuilder(hash.Length * 2);
+                    for (int i = 0; i < hash.Length; i++)
+                    {
+                        sb.Append(hash[i].ToString("x2"));
+                    }
+
+                    return sb.ToString();
+                }
             }
         }
 

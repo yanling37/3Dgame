@@ -106,7 +106,12 @@ namespace DivineWorld.Simulation.UI
                 return;
             }
 
-            world.Influence?.PullFromFocus();
+            // While a slider is held, keep scratch values so PullFromFocus cannot overwrite the drag.
+            if (GUIUtility.hotControl == 0)
+            {
+                world.Influence?.PullFromFocus();
+            }
+
             _cachedReport = world.BuildStatusReport();
             _lastDay = world.State != null ? world.State.TotalDays : -1;
         }
@@ -120,33 +125,33 @@ namespace DivineWorld.Simulation.UI
 
             ObservationHudLayout.Compute(Screen.width, out float leftX, out float leftW, out _, out _);
             var area = new Rect(leftX, ObservationHudLayout.Pad, leftW, Screen.height - ObservationHudLayout.Pad * 2f);
-            GUI.Box(area, ObservationVersion.HudTitle);
+            GUI.Box(area, GUIContent.none);
 
-            GUILayout.BeginArea(new Rect(area.x + 10, area.y + 28, area.width - 20, area.height - 36));
+            GUILayout.BeginArea(new Rect(area.x + 10, area.y + 8, area.width - 20, area.height - 16));
             GUILayout.Label(ObservationVersion.HudTitle);
 
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button(world.AutoRun ? "暂停" : "继续", GUILayout.Width(70)))
+            if (GUILayout.Button(world.AutoRun ? "暂停" : "继续", GUILayout.Width(70), GUILayout.Height(24)))
             {
                 world.AutoRun = !world.AutoRun;
             }
 
-            if (GUILayout.Button("+1日", GUILayout.Width(55)))
+            if (GUILayout.Button("+1日", GUILayout.Width(55), GUILayout.Height(24)))
             {
                 world.AdvanceDay();
             }
 
-            if (GUILayout.Button("+30日", GUILayout.Width(60)))
+            if (GUILayout.Button("+30日", GUILayout.Width(60), GUILayout.Height(24)))
             {
                 world.AdvanceDays(30);
             }
 
-            if (GUILayout.Button("+1年快进", GUILayout.Width(80)))
+            if (GUILayout.Button("+1年快进", GUILayout.Width(80), GUILayout.Height(24)))
             {
                 world.FastForwardYears(1);
             }
 
-            if (GUILayout.Button("+10年快进", GUILayout.Width(90)))
+            if (GUILayout.Button("+10年快进", GUILayout.Width(90), GUILayout.Height(24)))
             {
                 world.FastForwardYears(10);
             }
@@ -154,24 +159,24 @@ namespace DivineWorld.Simulation.UI
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("+360日", GUILayout.Width(80)))
+            if (GUILayout.Button("+360日", GUILayout.Width(80), GUILayout.Height(24)))
             {
                 world.AdvanceDays(360);
                 Refresh();
             }
 
-            if (GUILayout.Button("快进1年", GUILayout.Width(80)))
+            if (GUILayout.Button("快进1年", GUILayout.Width(80), GUILayout.Height(24)))
             {
                 world.FastForwardYears(1);
                 Refresh();
             }
 
-            if (GUILayout.Button("重置世界", GUILayout.Width(80)))
+            if (GUILayout.Button("重置世界", GUILayout.Width(80), GUILayout.Height(24)))
             {
                 world.ResetWorld();
             }
 
-            if (GUILayout.Button("一致性测试 1年", GUILayout.Width(120)))
+            if (GUILayout.Button("一致性测试 1年", GUILayout.Width(120), GUILayout.Height(24)))
             {
                 world.RunConsistencyTestOneYear();
                 Refresh();
@@ -193,16 +198,41 @@ namespace DivineWorld.Simulation.UI
 
             GUILayout.EndHorizontal();
 
+            GUILayout.Space(4);
             if (world.State != null)
             {
-                GUILayout.Label($"季节 {world.CurrentSeason} | 年 {world.CurrentYear} | 第 {world.DayOfYear} 日 | 季内 {world.DayInSeason}/90");
+                ObservationHudLayout.DrawCalendarClock(
+                    world.CurrentYear,
+                    world.CurrentSeason,
+                    world.DayOfYear,
+                    world.DayInSeason);
             }
+
+            // Sliders stay above the variable observation block so IMGUI control IDs do not shift
+            // when the first snapshot arrives (that shift made the first drag miss the thumb).
+            DrawInfluenceSliders();
 
             DrawRegionObservationPanel();
 
+            GUILayout.Space(8);
+            if (world.State != null && world.State.TotalDays != _lastDay && GUIUtility.hotControl == 0)
+            {
+                Refresh();
+            }
+
+            _scroll = GUILayout.BeginScrollView(_scroll);
+            GUILayout.TextArea(_cachedReport, GUILayout.ExpandHeight(true));
+            GUILayout.EndScrollView();
+
+            GUILayout.EndArea();
+        }
+
+        void DrawInfluenceSliders()
+        {
             GUILayout.Space(6);
             GUILayout.Label("速度（秒/日）");
-            world.SecondsPerDay = GUILayout.HorizontalSlider(world.SecondsPerDay, 0.05f, 1.5f);
+            world.SecondsPerDay = GUILayout.HorizontalSlider(
+                world.SecondsPerDay, 0.05f, 1.5f, GUILayout.Height(22), GUILayout.MinWidth(80));
 
             GUILayout.Space(8);
             GUILayout.Label("注视地区（微调写入该地区的独立 Influence）");
@@ -216,13 +246,17 @@ namespace DivineWorld.Simulation.UI
             var inf = world.Influence;
             GUILayout.Space(6);
             GUILayout.Label($"生育祝福 ×{inf.FertilityBlessing:0.00}");
-            float fert = GUILayout.HorizontalSlider(inf.FertilityBlessing, 0.7f, 1.3f);
+            float fert = GUILayout.HorizontalSlider(
+                inf.FertilityBlessing, 0.7f, 1.3f, GUILayout.Height(22), GUILayout.MinWidth(80));
             GUILayout.Label($"收成祝福 ×{inf.HarvestBlessing:0.00}");
-            float harvest = GUILayout.HorizontalSlider(inf.HarvestBlessing, 0.7f, 1.3f);
+            float harvest = GUILayout.HorizontalSlider(
+                inf.HarvestBlessing, 0.7f, 1.3f, GUILayout.Height(22), GUILayout.MinWidth(80));
             GUILayout.Label($"疫病压力 ×{inf.DiseaseCurse:0.00}");
-            float disease = GUILayout.HorizontalSlider(inf.DiseaseCurse, 0.7f, 1.3f);
+            float disease = GUILayout.HorizontalSlider(
+                inf.DiseaseCurse, 0.7f, 1.3f, GUILayout.Height(22), GUILayout.MinWidth(80));
             GUILayout.Label($"稳定祝福 ×{inf.StabilityBlessing:0.00}");
-            float stability = GUILayout.HorizontalSlider(inf.StabilityBlessing, 0.7f, 1.3f);
+            float stability = GUILayout.HorizontalSlider(
+                inf.StabilityBlessing, 0.7f, 1.3f, GUILayout.Height(22), GUILayout.MinWidth(80));
 
             if (!Mathf.Approximately(fert, inf.FertilityBlessing)
                 || !Mathf.Approximately(harvest, inf.HarvestBlessing)
@@ -236,22 +270,10 @@ namespace DivineWorld.Simulation.UI
                 inf.PushToFocus();
             }
 
-            if (GUILayout.Button("清除微调", GUILayout.Width(100)))
+            if (GUILayout.Button("清除微调", GUILayout.Width(100), GUILayout.Height(24)))
             {
                 inf.ResetSoft();
             }
-
-            GUILayout.Space(8);
-            if (world.State != null && world.State.TotalDays != _lastDay)
-            {
-                Refresh();
-            }
-
-            _scroll = GUILayout.BeginScrollView(_scroll);
-            GUILayout.TextArea(_cachedReport, GUILayout.ExpandHeight(true));
-            GUILayout.EndScrollView();
-
-            GUILayout.EndArea();
         }
 
         void FocusBtn(string label, RegionId? region)
@@ -285,7 +307,7 @@ namespace DivineWorld.Simulation.UI
             }
 
             var cfg = PopulationVisualizationConfig.CreateDefault();
-            GUILayout.Label($"快照 年 {snap.Year}  第 {snap.DayOfYear} 日  累计 {snap.TotalDays}  {snap.Season}");
+            GUILayout.Label("Snapshot TotalDays " + snap.TotalDays);
             for (int i = 0; i < snap.Regions.Length; i++)
             {
                 var r = snap.Regions[i];
