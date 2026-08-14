@@ -41,6 +41,8 @@ namespace HeadlessSimTests
             Run("Snapshot_CopiesPopulationExactly", TestSnapshotCopiesPopulation, failures);
             Run("Snapshot_IsIndependentCopy", TestSnapshotIsCopy, failures);
             Run("Visualizer_MatchesSnapshot", TestVisualizerMatchesSnapshot, failures);
+            Run("Visualizer_UsesSnapshotNotLiveState", TestVisualizerUsesSnapshotNotLiveState, failures);
+            Run("Visualizer_Source_ReadsSnapshotPopulation", TestVisualizerSourceReadsSnapshot, failures);
             Run("Regions_AreIndependent", TestRegionsIndependent, failures);
             Run("Checkpoints_Day1_30_90_180_360", TestCheckpoints, failures);
             Run("PopulationDeclineAndGrowth", TestDeclineAndGrowth, failures);
@@ -48,14 +50,19 @@ namespace HeadlessSimTests
             Run("NoNegativeMarkers", TestNoNegativeMarkers, failures);
             Run("NoNaNOrInfinity", TestNoNanInfinity, failures);
             Run("MaxMarkersPerRegion", TestMaxMarkers, failures);
+            Run("MaxMarkers_DoesNotAffectOtherRegions", TestMaxMarkersIndependent, failures);
             Run("Threshold_OnlyUpdatesCountOnCrossing", TestThresholdUpdates, failures);
             Run("NoPerPersonObjects", TestBoundedAllocation, failures);
             Run("Reset_RebuildsInitialVisuals", TestReset, failures);
+            Run("Reset_ClearsStaleMarkerCounts", TestResetClearsStaleMarkers, failures);
             Run("FastForward_UsesNewSnapshot", TestFastForward, failures);
+            Run("FastForward_VisualNotStale", TestFastForwardVisualNotStale, failures);
             Run("P2A_Freeze_HashesAndNoMutation", TestP2AFreeze, failures);
+            Run("ProjectSettings_And_Packages_Unchanged", TestProjectSettingsAndPackagesUnchanged, failures);
 
             Console.WriteLine();
-            Console.WriteLine($"Result: {16 - failures.Count}/16 passed");
+            const int total = 22;
+            Console.WriteLine($"Result: {total - failures.Count}/{total} passed");
             foreach (var f in failures)
             {
                 Console.WriteLine("FAIL: " + f);
@@ -132,6 +139,51 @@ namespace HeadlessSimTests
                     region.RegionId + " markers " + actual + " != rules " + expected + " for pop " + region.Population);
                 AssertTrue(actual >= 0, "negative markers");
             }
+        }
+
+        static void TestVisualizerUsesSnapshotNotLiveState()
+        {
+            var world = new HeadlessWorld();
+            var cfg = PopulationVisualizationConfig.CreateDefault();
+            var snap = ObservationCapture.FromWorld(world.State);
+            var visual = new PopulationVisualState();
+            visual.Apply(snap, cfg);
+
+            float snapPop = snap.Find(RegionId.Empire).Population;
+            int fromSnapshot = visual.VisibleCount(RegionId.Empire);
+            AssertTrue(fromSnapshot == PopulationMarkerRules.MarkerCount(snapPop, cfg), "baseline from snapshot.Population");
+            AssertTrue(fromSnapshot > 0, "day-0 empire should have markers");
+
+            world.Region(RegionId.Empire).Population = 0f;
+            world.Region(RegionId.Theocracy).Population = cfg.PopulationPerMarker * 50f;
+            visual.Apply(snap, cfg);
+
+            AssertTrue(visual.VisibleCount(RegionId.Empire) == fromSnapshot,
+                "visualizer must keep snapshot.Population, not live WorldState (empire)");
+            AssertTrue(
+                visual.VisibleCount(RegionId.Theocracy)
+                == PopulationMarkerRules.MarkerCount(snap.Find(RegionId.Theocracy).Population, cfg),
+                "visualizer must keep snapshot.Population, not live WorldState (theocracy)");
+            AssertTrue(fromSnapshot != 0, "stale live-state zero must not win over snapshot");
+        }
+
+        static void TestVisualizerSourceReadsSnapshot()
+        {
+            string root = FindRepoRoot();
+            AssertTrue(root != null, "repo root");
+            string vizPath = Path.Combine(root, "Assets/Scripts/Simulation/Presentation/PopulationVisualizer.cs");
+            string capturePath = Path.Combine(root, "Assets/Scripts/Simulation/Observation/ObservationCapture.cs");
+            AssertTrue(File.Exists(vizPath), "PopulationVisualizer.cs missing");
+            AssertTrue(File.Exists(capturePath), "ObservationCapture.cs missing");
+
+            string viz = File.ReadAllText(vizPath);
+            string capture = File.ReadAllText(capturePath);
+            AssertTrue(viz.Contains("WorldObservationSnapshot"), "PopulationVisualizer must consume observation snapshots");
+            AssertTrue(viz.Contains("region.Population"), "PopulationVisualizer must read snapshot.Population");
+            AssertTrue(!viz.Contains("SimulationWorld"), "PopulationVisualizer must not read SimulationWorld");
+            AssertTrue(!viz.Contains("world.State"), "PopulationVisualizer must not read world.State");
+            AssertTrue(!capture.Contains("PopulationSystem"), "ObservationCapture must not call PopulationSystem");
+            AssertTrue(capture.Contains("region.Population"), "ObservationCapture must copy RegionState.Population");
         }
 
         static void TestRegionsIndependent()
@@ -286,6 +338,25 @@ namespace HeadlessSimTests
             AssertTrue(visual.AllocatedMarkerSlots <= 5 * world.State.Regions.Length, "no unbounded allocation");
         }
 
+        static void TestMaxMarkersIndependent()
+        {
+            var cfg = PopulationVisualizationConfig.CreateDefault();
+            cfg.MaxMarkersPerRegion = 4;
+            var visual = new PopulationVisualState();
+            var world = new HeadlessWorld();
+            visual.Apply(ObservationCapture.FromWorld(world.State), cfg);
+            int seaBefore = visual.VisibleCount(RegionId.Sea);
+            int theoBefore = visual.VisibleCount(RegionId.Theocracy);
+
+            world.Region(RegionId.Empire).Population = cfg.PopulationPerMarker * 1000f;
+            visual.Apply(ObservationCapture.FromWorld(world.State), cfg);
+            AssertTrue(visual.VisibleCount(RegionId.Empire) == 4, "empire capped");
+            AssertTrue(visual.VisibleCount(RegionId.Sea) == seaBefore, "sea cap independent");
+            AssertTrue(visual.VisibleCount(RegionId.Theocracy) == theoBefore, "theocracy cap independent");
+            AssertTrue(visual.AllocatedCount(RegionId.Empire) <= 4, "empire allocated cap");
+            AssertTrue(visual.AllocatedCount(RegionId.Sea) <= 4, "sea allocated cap");
+        }
+
         static void TestThresholdUpdates()
         {
             var cfg = new PopulationVisualizationConfig
@@ -368,6 +439,39 @@ namespace HeadlessSimTests
             AssertTrue(visual.DestroyEvents == 0, "reset must reuse pools, not destroy");
         }
 
+        static void TestResetClearsStaleMarkers()
+        {
+            var cfg = new PopulationVisualizationConfig
+            {
+                PopulationPerMarker = 1000f,
+                MaxMarkersPerRegion = 80,
+                MinMarkerScale = PopulationVisualizationConfig.DefaultMinMarkerScale,
+                MaxMarkerScale = PopulationVisualizationConfig.DefaultMaxMarkerScale
+            };
+            var visual = new PopulationVisualState();
+            var world = new HeadlessWorld();
+            var day0 = ObservationCapture.FromWorld(world.State);
+            visual.Apply(day0, cfg);
+            int seaDay0 = visual.VisibleCount(RegionId.Sea);
+            int empDay0 = visual.VisibleCount(RegionId.Empire);
+            AssertTrue(seaDay0 > 0 && empDay0 > 0, "day-0 markers present");
+
+            world.Region(RegionId.Sea).Population = 0f;
+            world.Region(RegionId.Empire).Population = cfg.PopulationPerMarker * 70f;
+            visual.Apply(ObservationCapture.FromWorld(world.State), cfg);
+            AssertTrue(visual.VisibleCount(RegionId.Sea) == 0, "sea cleared to 0 before reset");
+            AssertTrue(visual.VisibleCount(RegionId.Empire) == 70, "empire inflated before reset");
+
+            world.Reset();
+            var after = ObservationCapture.FromWorld(world.State);
+            visual.RebuildFrom(after, cfg);
+            AssertTrue(visual.VisibleCount(RegionId.Sea) == seaDay0, "reset must restore sea, not keep 0 leftover");
+            AssertTrue(visual.VisibleCount(RegionId.Empire) == empDay0, "reset must drop inflated empire markers");
+            AssertTrue(visual.VisibleCount(RegionId.Empire) != 70, "old inflated visual must not remain");
+            AssertVisualMatchesSnapshot(visual, after, cfg);
+            AssertTrue(visual.DestroyEvents == 0, "reset reuses pool");
+        }
+
         static void TestFastForward()
         {
             var cfg = PopulationVisualizationConfig.CreateDefault();
@@ -418,6 +522,46 @@ namespace HeadlessSimTests
             AssertTrue(after.TotalDays != before.TotalDays, "FF snapshot day must advance");
         }
 
+        static void TestFastForwardVisualNotStale()
+        {
+            var cfg = PopulationVisualizationConfig.CreateDefault();
+            var visual = new PopulationVisualState();
+            var world = new HeadlessWorld();
+            var before = ObservationCapture.FromWorld(world.State);
+            visual.Apply(before, cfg);
+            int[] beforeCounts =
+            {
+                visual.VisibleCount(RegionId.Theocracy),
+                visual.VisibleCount(RegionId.Empire),
+                visual.VisibleCount(RegionId.Sea)
+            };
+
+            var ff = FastForwardSystem.FastForwardYears(world.State, world.Races, world.Config, 1);
+            var after = ObservationCapture.FromWorld(ff.State);
+            visual.Apply(after, cfg);
+
+            AssertSnapshotMatchesState(ff.State, after);
+            AssertVisualMatchesSnapshot(visual, after, cfg);
+
+            bool visualMoved = false;
+            var ids = new[] { RegionId.Theocracy, RegionId.Empire, RegionId.Sea };
+            for (int i = 0; i < ids.Length; i++)
+            {
+                int expected = PopulationMarkerRules.MarkerCount(after.Find(ids[i]).Population, cfg);
+                int actual = visual.VisibleCount(ids[i]);
+                AssertTrue(actual == expected, ids[i] + " FF visual " + actual + " != " + expected);
+                int stale = PopulationMarkerRules.MarkerCount(before.Find(ids[i]).Population, cfg);
+                AssertTrue(actual != stale || expected == stale, ids[i] + " must not keep pre-FF marker count when snapshot changed");
+                if (actual != beforeCounts[i])
+                {
+                    visualMoved = true;
+                }
+            }
+
+            AssertTrue(visualMoved, "FastForward 1y should change at least one region's visible marker count");
+            AssertTrue(after.TotalDays >= 360, "FF snapshot is the post-year state, not day 0");
+        }
+
         static void TestP2AFreeze()
         {
             string root = FindRepoRoot();
@@ -448,6 +592,45 @@ namespace HeadlessSimTests
             {
                 AssertTrue(NumericGuard.IsFinite(r.Population) && r.Population >= 0f, r.Id + " pop");
             }
+
+            string freezeDiff = GitDiffNames(root, "main",
+                "Assets/Scripts/Simulation/Systems/PopulationSystem.cs",
+                "Assets/Scripts/Simulation/Systems/ResourceSystem.cs",
+                "Assets/Scripts/Simulation/Systems/SeasonSystem.cs",
+                "Assets/Scripts/Simulation/Systems/WeatherSystem.cs",
+                "Assets/Scripts/Simulation/Systems/EventSystem.cs",
+                "Assets/Scripts/Simulation/Systems/FastForwardSystem.cs",
+                "Assets/Scripts/Simulation/Systems/SocietySystem.cs",
+                "Assets/Scripts/Simulation/Data/SimulationConfig.cs",
+                "Assets/Scripts/Simulation/Core/DailySimulation.cs");
+            AssertTrue(string.IsNullOrWhiteSpace(freezeDiff), "P2-A frozen files differ from main:\n" + freezeDiff);
+        }
+
+        static void TestProjectSettingsAndPackagesUnchanged()
+        {
+            string root = FindRepoRoot();
+            AssertTrue(root != null, "repo root");
+
+            var hashed = new (string RelPath, string Sha256)[]
+            {
+                ("ProjectSettings/ProjectVersion.txt", "b42279cfd794d9f1825f3b7c1f318b861fa9e2e2b3c6c146737bdbd41c01b389"),
+                ("Packages/manifest.json", "bb54c36c1d185581b77af229153f17b3a42faf1498e18f45cde99c981f103625"),
+                ("Packages/packages-lock.json", "8f8da263666198014ea3aab3d3faae02ceae10d64f319e74874084b3585cb022")
+            };
+            foreach (var file in hashed)
+            {
+                string path = Path.Combine(root, file.RelPath);
+                AssertTrue(File.Exists(path), "missing " + file.RelPath);
+                string hash = Sha256File(path);
+                AssertTrue(hash == file.Sha256, file.RelPath + " changed. expected " + file.Sha256 + " got " + hash);
+            }
+
+            string version = File.ReadAllText(Path.Combine(root, "ProjectSettings/ProjectVersion.txt"));
+            AssertTrue(version.Contains("2022.3.62f3c1"), "Unity version must stay 2022.3.62f3c1");
+            AssertTrue(version.Contains("1623fc0bbb97"), "Unity revision must stay 1623fc0bbb97");
+
+            string diff = GitDiffNames(root, "main", "ProjectSettings", "Packages");
+            AssertTrue(string.IsNullOrWhiteSpace(diff), "ProjectSettings/Packages differ from main:\n" + diff);
         }
 
         static void AssertSnapshotMatchesState(HeadlessWorld world, WorldObservationSnapshot snap)
@@ -503,6 +686,28 @@ namespace HeadlessSimTests
                 }
 
                 return sb.ToString();
+            }
+        }
+
+        static string GitDiffNames(string root, string baseline, params string[] paths)
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = "diff --name-only " + baseline + " -- " + string.Join(" ", paths),
+                WorkingDirectory = root,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+            using (var proc = System.Diagnostics.Process.Start(psi))
+            {
+                AssertTrue(proc != null, "failed to start git");
+                string output = proc.StandardOutput.ReadToEnd();
+                string err = proc.StandardError.ReadToEnd();
+                proc.WaitForExit();
+                AssertTrue(proc.ExitCode == 0, "git diff failed: " + err);
+                return output.Trim();
             }
         }
 
