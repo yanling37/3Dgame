@@ -5,7 +5,7 @@ namespace DivineWorld.Simulation.Observation
     /// </summary>
     public static class ObservationVersion
     {
-        public const string Number = "v0.4";
-        public const string HudTitle = "P2-B · Observation v0.4";
+        public const string Number = "v0.5";
+        public const string HudTitle = "P2-B · Observation v0.5";
     }
 }

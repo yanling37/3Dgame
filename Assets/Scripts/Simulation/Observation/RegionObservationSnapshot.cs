@@ -24,6 +24,7 @@ namespace DivineWorld.Simulation.Observation
             float disease,
             float education,
             float faith,
+            float lastWaterCapacity,
             ObservationEventRecord[] events)
         {
             RegionId = regionId;
@@ -41,6 +42,7 @@ namespace DivineWorld.Simulation.Observation
             Disease = disease;
             Education = education;
             Faith = faith;
+            LastWaterCapacity = lastWaterCapacity;
             Events = events ?? ObservationEventRecord.None;
         }
 
@@ -63,6 +65,8 @@ namespace DivineWorld.Simulation.Observation
         public float Disease { get; }
         public float Education { get; }
         public float Faith { get; }
+        public float LastWaterCapacity { get; }
+        public float WaterCapacity => LastWaterCapacity;
         public ObservationEventRecord[] Events { get; }
     }
 }

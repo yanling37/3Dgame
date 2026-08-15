@@ -24,6 +24,40 @@ namespace DivineWorld.Simulation.Observation
         public IReadOnlyList<ObservationEventRecord> Events => _events;
 
         public HistorySample Last => _samples.Count > 0 ? _samples[_samples.Count - 1] : null;
+        public HistorySample First => _samples.Count > 0 ? _samples[0] : null;
+
+        public HistorySample FindAtOrBefore(int totalDays)
+        {
+            if (_samples.Count == 0 || _samples[0].TotalDays > totalDays)
+            {
+                return null;
+            }
+
+            int lo = 0;
+            int hi = _samples.Count - 1;
+            int best = 0;
+            while (lo <= hi)
+            {
+                int mid = lo + ((hi - lo) / 2);
+                int day = _samples[mid].TotalDays;
+                if (day == totalDays)
+                {
+                    return _samples[mid];
+                }
+
+                if (day < totalDays)
+                {
+                    best = mid;
+                    lo = mid + 1;
+                }
+                else
+                {
+                    hi = mid - 1;
+                }
+            }
+
+            return _samples[best];
+        }
 
         public void AppendOrReplace(HistorySample sample)
         {

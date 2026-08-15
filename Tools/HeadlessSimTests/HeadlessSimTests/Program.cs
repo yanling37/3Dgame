@@ -27,13 +27,18 @@ namespace HeadlessSimTests
                         int v03 = Phase2BObservationTests.Run();
                         Console.WriteLine();
                         int v04 = Phase2BHistoryTests.Run();
-                        return v03 != 0 ? v03 : v04;
+                        Console.WriteLine();
+                        int v05 = Phase2BReportTests.Run();
+                        return v03 != 0 ? v03 : (v04 != 0 ? v04 : v05);
                     }
                 case "p2b-v03":
                     return Phase2BObservationTests.Run();
                 case "p2b-v04":
                 case "history":
                     return Phase2BHistoryTests.Run();
+                case "p2b-v05":
+                case "report":
+                    return Phase2BReportTests.Run();
                 default:
                     Console.WriteLine("Divine World P2-A Headless Tests");
                     Console.WriteLine("================================");
@@ -46,7 +51,9 @@ namespace HeadlessSimTests
                     int p2b = Phase2BObservationTests.Run();
                     Console.WriteLine();
                     int p2b04 = Phase2BHistoryTests.Run();
-                    return p2a != 0 ? p2a : (fert != 0 ? fert : (p2a2 != 0 ? p2a2 : (p2b != 0 ? p2b : p2b04)));
+                    Console.WriteLine();
+                    int p2b05 = Phase2BReportTests.Run();
+                    return p2a != 0 ? p2a : (fert != 0 ? fert : (p2a2 != 0 ? p2a2 : (p2b != 0 ? p2b : (p2b04 != 0 ? p2b04 : p2b05))));
             }
         }
     }

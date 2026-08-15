@@ -52,9 +52,14 @@ namespace DivineWorld.Simulation
                 popGo.transform.SetParent(mapRoot.transform, false);
                 var pop = popGo.AddComponent<PopulationVisualizer>();
                 pop.Bind(observation);
+
+                var resGo = new GameObject("ResourceNodeVisualizer");
+                resGo.transform.SetParent(mapRoot.transform, false);
+                var resources = resGo.AddComponent<ResourceNodeVisualizer>();
+                resources.Bind(observation);
             }
 
-            Debug.Log("[DivineWorld] " + ObservationVersion.HudTitle + " started (observation snapshot → history / trend).");
+            Debug.Log("[DivineWorld] " + ObservationVersion.HudTitle + " started (observation snapshot → history / report / compare / resource nodes).");
         }
 
         void EnsureCamera()

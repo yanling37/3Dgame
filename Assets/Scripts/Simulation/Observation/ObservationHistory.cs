@@ -109,6 +109,70 @@ namespace DivineWorld.Simulation.Observation
             Revision++;
         }
 
+        public HistorySample FindAtOrBefore(RegionId regionId, int totalDays)
+        {
+            return Buffer(regionId).FindAtOrBefore(totalDays);
+        }
+
+        public HistorySample Latest(RegionId regionId)
+        {
+            return Buffer(regionId).Last;
+        }
+
+        public void SharedWindow(HistoryTimeRange range, out int rangeStart, out int rangeEnd)
+        {
+            rangeEnd = LastTotalDays;
+            int earliest = int.MaxValue;
+            for (int i = 0; i < DefaultRegions.Length; i++)
+            {
+                var first = Buffer(DefaultRegions[i]).First;
+                if (first != null && first.TotalDays < earliest)
+                {
+                    earliest = first.TotalDays;
+                }
+            }
+
+            if (earliest == int.MaxValue)
+            {
+                rangeStart = 0;
+                rangeEnd = 0;
+                return;
+            }
+
+            int window = HistoryMetrics.WindowDays(range);
+            rangeStart = earliest;
+            if (window > 0)
+            {
+                int requestedStart = rangeEnd - window + 1;
+                rangeStart = requestedStart > earliest ? requestedStart : earliest;
+            }
+        }
+
+        public RegionCompare QueryCompare(
+            HistoryMetric metric,
+            HistoryTimeRange range,
+            int maxPlotPoints = 0)
+        {
+            SharedWindow(range, out int rangeStart, out int rangeEnd);
+            var series = new TrendSeries[DefaultRegions.Length];
+            for (int i = 0; i < DefaultRegions.Length; i++)
+            {
+                series[i] = QuerySlice(DefaultRegions[i], metric, range, rangeStart, rangeEnd, maxPlotPoints);
+            }
+
+            string label = "No history";
+            for (int i = 0; i < series.Length; i++)
+            {
+                if (series[i].HasData)
+                {
+                    label = series[i].ActualRangeLabel;
+                    break;
+                }
+            }
+
+            return new RegionCompare(metric, range, rangeStart, rangeEnd, series, label);
+        }
+
         public TrendSeries Query(
             RegionId regionId,
             HistoryMetric metric,
@@ -118,17 +182,7 @@ namespace DivineWorld.Simulation.Observation
             var buffer = Buffer(regionId);
             if (buffer.Count == 0)
             {
-                return new TrendSeries(
-                    regionId,
-                    metric,
-                    range,
-                    Array.Empty<HistorySample>(),
-                    Array.Empty<TrendPlotPoint>(),
-                    Array.Empty<TrendEventMarker>(),
-                    Array.Empty<TrendAxisLabel>(),
-                    HistoryMetrics.WindowDays(range),
-                    0,
-                    "No history");
+                return EmptySeries(regionId, metric, range);
             }
 
             var all = buffer.Samples;
@@ -142,17 +196,40 @@ namespace DivineWorld.Simulation.Observation
                 rangeStart = requestedStart > earliest ? requestedStart : earliest;
             }
 
+            return QuerySlice(regionId, metric, range, rangeStart, latest, maxPlotPoints);
+        }
+
+        TrendSeries QuerySlice(
+            RegionId regionId,
+            HistoryMetric metric,
+            HistoryTimeRange range,
+            int rangeStart,
+            int rangeEnd,
+            int maxPlotPoints)
+        {
+            var buffer = Buffer(regionId);
+            if (buffer.Count == 0)
+            {
+                return EmptySeries(regionId, metric, range);
+            }
+
+            var all = buffer.Samples;
             int startIndex = 0;
             while (startIndex < all.Count && all[startIndex].TotalDays < rangeStart)
             {
                 startIndex++;
             }
 
-            int sliceCount = all.Count - startIndex;
+            int endIndex = all.Count - 1;
+            while (endIndex >= startIndex && all[endIndex].TotalDays > rangeEnd)
+            {
+                endIndex--;
+            }
+
+            int sliceCount = endIndex - startIndex + 1;
             if (sliceCount <= 0)
             {
-                startIndex = all.Count - 1;
-                sliceCount = 1;
+                return EmptySeries(regionId, metric, range);
             }
 
             var samples = new HistorySample[sliceCount];
@@ -179,9 +256,24 @@ namespace DivineWorld.Simulation.Observation
                 plot,
                 markers,
                 labels,
-                window,
-                latest,
+                HistoryMetrics.WindowDays(range),
+                LastTotalDays,
                 actual);
+        }
+
+        static TrendSeries EmptySeries(RegionId regionId, HistoryMetric metric, HistoryTimeRange range)
+        {
+            return new TrendSeries(
+                regionId,
+                metric,
+                range,
+                Array.Empty<HistorySample>(),
+                Array.Empty<TrendPlotPoint>(),
+                Array.Empty<TrendEventMarker>(),
+                Array.Empty<TrendAxisLabel>(),
+                HistoryMetrics.WindowDays(range),
+                0,
+                "No history");
         }
 
         public bool HasNonFiniteOrNegative(out string reason)
@@ -203,6 +295,7 @@ namespace DivineWorld.Simulation.Observation
                     if (IsBad(r.Stability, "Stability", pair.Key, samples[i].TotalDays, out reason)) return true;
                     if (IsBad(r.Education, "Education", pair.Key, samples[i].TotalDays, out reason)) return true;
                     if (IsBad(r.Faith, "Faith", pair.Key, samples[i].TotalDays, out reason)) return true;
+                    if (IsBad(r.LastWaterCapacity, "WaterCapacity", pair.Key, samples[i].TotalDays, out reason)) return true;
                 }
             }
 
