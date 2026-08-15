@@ -535,17 +535,30 @@ namespace HeadlessSimTests
 
         static string Sha256File(string path)
         {
-            using (var stream = File.OpenRead(path))
-            using (var sha = SHA256.Create())
+            byte[] raw = File.ReadAllBytes(path);
+            using (var ms = new MemoryStream(raw.Length))
             {
-                byte[] hash = sha.ComputeHash(stream);
-                var sb = new StringBuilder(hash.Length * 2);
-                for (int i = 0; i < hash.Length; i++)
+                for (int i = 0; i < raw.Length; i++)
                 {
-                    sb.Append(hash[i].ToString("x2"));
+                    if (raw[i] == (byte)'\r' && i + 1 < raw.Length && raw[i + 1] == (byte)'\n')
+                    {
+                        continue;
+                    }
+
+                    ms.WriteByte(raw[i]);
                 }
 
-                return sb.ToString();
+                using (var sha = SHA256.Create())
+                {
+                    byte[] hash = sha.ComputeHash(ms.ToArray());
+                    var sb = new StringBuilder(hash.Length * 2);
+                    for (int i = 0; i < hash.Length; i++)
+                    {
+                        sb.Append(hash[i].ToString("x2"));
+                    }
+
+                    return sb.ToString();
+                }
             }
         }
 
