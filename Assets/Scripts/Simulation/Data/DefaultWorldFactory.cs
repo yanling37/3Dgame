@@ -1,3 +1,5 @@
+using DivineWorld.Simulation.Politics;
+
 namespace DivineWorld.Simulation.Data
 {
     /// <summary>
@@ -113,6 +115,7 @@ namespace DivineWorld.Simulation.Data
             };
 
             world.SyncSeasonFromDay();
+            world.Politics = PoliticsSystem.CreateInitialState();
             return world;
         }
     }

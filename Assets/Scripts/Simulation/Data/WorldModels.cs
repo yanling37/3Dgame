@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DivineWorld.Simulation.Player;
+using DivineWorld.Simulation.Politics;
 using UnityEngine;
 
 namespace DivineWorld.Simulation.Data
@@ -218,6 +219,12 @@ namespace DivineWorld.Simulation.Data
         public bool HaltedOnNumericError;
         public string LastNumericError;
 
+        /// <summary>
+        /// Undirected political relations. Independent from population/resource systems.
+        /// FastForward clones this field and does not mutate relation values in P2-C v0.1.
+        /// </summary>
+        public PoliticsState Politics;
+
         public int CurrentYear => Year;
 
         public int DayInSeason
@@ -267,6 +274,7 @@ namespace DivineWorld.Simulation.Data
                 RandomSeed = RandomSeed,
                 HaltedOnNumericError = HaltedOnNumericError,
                 LastNumericError = LastNumericError,
+                Politics = Politics != null ? Politics.Clone() : null,
                 Regions = new RegionState[Regions != null ? Regions.Length : 0]
             };
 
