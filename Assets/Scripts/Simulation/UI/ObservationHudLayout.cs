@@ -4,13 +4,20 @@ using UnityEngine;
 namespace DivineWorld.Simulation.UI
 {
     /// <summary>
-    /// Keeps the v0.3 region panel and v0.4 history panel from covering each other.
-    /// Also draws the shared Year / Season / Day clock so date text cannot stack.
+    /// Shared IMGUI layout: persistent top bar, exclusive window slots, calendar clock.
     /// </summary>
     public static class ObservationHudLayout
     {
         public const float Pad = 12f;
         public const float Gap = 12f;
+        public const float PersistentBarHeight = 108f;
+
+        public static float WindowTop => PersistentBarHeight + Gap;
+
+        public static Rect PersistentBarRect(float screenWidth)
+        {
+            return new Rect(0f, 0f, screenWidth, PersistentBarHeight);
+        }
 
         static GUIStyle _yearStyle;
         static GUIStyle _seasonStyle;
@@ -46,20 +53,25 @@ namespace DivineWorld.Simulation.UI
         }
 
         /// <summary>
-        /// Bottom-center P2-C politics panel. Does not change v0.3/v0.5 panel widths.
+        /// Shared left dock for exclusive function windows (observer / history / politics).
         /// </summary>
-        public static Rect PoliticsPanel(float screenWidth, float screenHeight)
+        public static Rect LeftWindow(float screenWidth, float screenHeight)
         {
-            float width = Mathf.Clamp(screenWidth * 0.42f, 420f, 560f);
-            if (width > screenWidth - Pad * 2f)
+            Compute(screenWidth, out float leftX, out float leftW, out _, out float rightW);
+            float width = Mathf.Max(leftW, Mathf.Min(520f, rightW));
+            float maxW = Mathf.Max(320f, screenWidth - Pad * 2f);
+            if (width > maxW)
             {
-                width = Mathf.Max(320f, screenWidth - Pad * 2f);
+                width = maxW;
             }
 
-            float height = Mathf.Clamp(screenHeight * 0.34f, 240f, 320f);
-            float x = (screenWidth - width) * 0.5f;
-            float y = screenHeight - height - Pad;
-            return new Rect(x, y, width, height);
+            float top = WindowTop;
+            return new Rect(leftX, top, width, screenHeight - top - Pad);
+        }
+
+        public static Rect PoliticsPanel(float screenWidth, float screenHeight)
+        {
+            return LeftWindow(screenWidth, screenHeight);
         }
 
         public static void DrawCalendarClock(int year, SeasonId season, int dayOfYear, int dayInSeason = -1)

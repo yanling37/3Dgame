@@ -19,6 +19,7 @@ namespace DivineWorld.Simulation.UI
         [SerializeField] ObservationHost observation;
         [SerializeField] bool visible = true;
 
+        HudWindowState _windows;
         ObservationViewMode _mode = ObservationViewMode.SingleRegion;
         RegionId _region = RegionId.Theocracy;
         HistoryMetric _metric = HistoryMetric.Population;
@@ -65,6 +66,11 @@ namespace DivineWorld.Simulation.UI
             Invalidate();
         }
 
+        public void BindWindows(HudWindowState windows)
+        {
+            _windows = windows;
+        }
+
         void Start()
         {
             if (observation == null)
@@ -99,16 +105,35 @@ namespace DivineWorld.Simulation.UI
                 return;
             }
 
+            if (_windows != null && !_windows.IsOpen(HudWindowId.History))
+            {
+                return;
+            }
+
             EnsureCaches();
 
-            ObservationHudLayout.Compute(Screen.width, out _, out _, out float rightX, out float rightW);
-            var area = new Rect(rightX, ObservationHudLayout.Pad, rightW, Screen.height - ObservationHudLayout.Pad * 2f);
+            var area = ObservationHudLayout.LeftWindow(Screen.width, Screen.height);
             GUI.Box(area, GUIContent.none);
 
             GUILayout.BeginArea(new Rect(area.x + 10f, area.y + 8f, area.width - 20f, area.height - 16f));
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(ObservationVersion.HudTitle);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("隐藏", GUILayout.Width(56f), GUILayout.Height(22f)))
+            {
+                if (_windows != null)
+                {
+                    _windows.Close();
+                }
+                else
+                {
+                    visible = false;
+                }
+            }
+
+            GUILayout.EndHorizontal();
             _scroll = GUILayout.BeginScrollView(_scroll);
 
-            GUILayout.Label(ObservationVersion.HudTitle);
             GUILayout.Label("History / Report / Compare");
 
             GUILayout.Space(4);

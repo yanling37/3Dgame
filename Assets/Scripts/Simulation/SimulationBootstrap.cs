@@ -41,6 +41,10 @@ namespace DivineWorld.Simulation
                 var politicsGo = new GameObject("PoliticsHud");
                 var politicsHud = politicsGo.AddComponent<PoliticsHud>();
                 politicsHud.Bind(world);
+
+                var persistentGo = new GameObject("PersistentHud");
+                var persistent = persistentGo.AddComponent<PersistentHud>();
+                persistent.Bind(world, hud, historyHud, politicsHud);
             }
 
             if (createMapVisualization)

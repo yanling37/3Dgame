@@ -14,11 +14,17 @@ namespace DivineWorld.Simulation.UI
         [SerializeField] SimulationWorld world;
         [SerializeField] bool visible = true;
 
+        HudWindowState _windows;
         Vector2 _scroll;
 
         public void Bind(SimulationWorld simulationWorld)
         {
             world = simulationWorld;
+        }
+
+        public void BindWindows(HudWindowState windows)
+        {
+            _windows = windows;
         }
 
         void Start()
@@ -36,12 +42,32 @@ namespace DivineWorld.Simulation.UI
                 return;
             }
 
+            if (_windows != null && !_windows.IsOpen(HudWindowId.Politics))
+            {
+                return;
+            }
+
             PoliticsSystem.EnsureInitialized(world.State);
             var area = ObservationHudLayout.PoliticsPanel(Screen.width, Screen.height);
             GUI.Box(area, GUIContent.none);
 
             GUILayout.BeginArea(new Rect(area.x + 10f, area.y + 6f, area.width - 20f, area.height - 12f));
+            GUILayout.BeginHorizontal();
             GUILayout.Label(PoliticsVersion.HudTitle);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("隐藏", GUILayout.Width(56f), GUILayout.Height(22f)))
+            {
+                if (_windows != null)
+                {
+                    _windows.Close();
+                }
+                else
+                {
+                    visible = false;
+                }
+            }
+
+            GUILayout.EndHorizontal();
             GUILayout.Label("Politics / Relations  (undirected · no war simulation)");
 
             GUILayout.BeginHorizontal();
