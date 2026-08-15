@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using DivineWorld.Simulation.Data;
 using DivineWorld.Simulation.Player;
+using DivineWorld.Simulation.Politics;
 using DivineWorld.Simulation.Systems;
 using DivineWorld.Simulation.Testing;
 using UnityEngine;
@@ -85,6 +86,20 @@ namespace DivineWorld.Simulation.Core
             _dayTimer = 0f;
             LastConsistencyReport = "";
             OnDayAdvanced?.Invoke(State);
+        }
+
+        /// <summary>
+        /// Observation / test-layer relation nudge. Does not touch population or resources.
+        /// </summary>
+        public bool DebugAdjustRelation(RegionId a, RegionId b, float delta)
+        {
+            bool changed = PoliticsSystem.DebugAdjust(State, a, b, delta);
+            if (changed)
+            {
+                OnDayAdvanced?.Invoke(State);
+            }
+
+            return changed;
         }
 
         public void AdvanceDay()

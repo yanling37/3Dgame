@@ -14,6 +14,7 @@ namespace DivineWorld.Simulation.UI
         [SerializeField] ObservationHost observation;
         [SerializeField] bool visible = true;
 
+        HudWindowState _windows;
         Vector2 _scroll;
         string _cachedReport = "";
         int _lastDay = -1;
@@ -54,6 +55,11 @@ namespace DivineWorld.Simulation.UI
             }
 
             Refresh();
+        }
+
+        public void BindWindows(HudWindowState windows)
+        {
+            _windows = windows;
         }
 
         void OnDay(WorldState _)
@@ -123,57 +129,42 @@ namespace DivineWorld.Simulation.UI
                 return;
             }
 
-            ObservationHudLayout.Compute(Screen.width, out float leftX, out float leftW, out _, out _);
-            var area = new Rect(leftX, ObservationHudLayout.Pad, leftW, Screen.height - ObservationHudLayout.Pad * 2f);
+            if (_windows != null && !_windows.IsOpen(HudWindowId.Observer))
+            {
+                return;
+            }
+
+            var area = ObservationHudLayout.LeftWindow(Screen.width, Screen.height);
             GUI.Box(area, GUIContent.none);
 
             GUILayout.BeginArea(new Rect(area.x + 10, area.y + 8, area.width - 20, area.height - 16));
-            GUILayout.Label(ObservationVersion.HudTitle);
-
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button(world.AutoRun ? "暂停" : "继续", GUILayout.Width(70), GUILayout.Height(24)))
+            GUILayout.Label(ObservationVersion.HudTitle);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("隐藏", GUILayout.Width(56), GUILayout.Height(22)))
             {
-                world.AutoRun = !world.AutoRun;
-            }
-
-            if (GUILayout.Button("+1日", GUILayout.Width(55), GUILayout.Height(24)))
-            {
-                world.AdvanceDay();
-            }
-
-            if (GUILayout.Button("+30日", GUILayout.Width(60), GUILayout.Height(24)))
-            {
-                world.AdvanceDays(30);
-            }
-
-            if (GUILayout.Button("+1年快进", GUILayout.Width(80), GUILayout.Height(24)))
-            {
-                world.FastForwardYears(1);
-            }
-
-            if (GUILayout.Button("+10年快进", GUILayout.Width(90), GUILayout.Height(24)))
-            {
-                world.FastForwardYears(10);
+                if (_windows != null)
+                {
+                    _windows.Close();
+                }
+                else
+                {
+                    visible = false;
+                }
             }
 
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
+            if (GUILayout.Button("+10年快进", GUILayout.Width(90), GUILayout.Height(24)))
+            {
+                world.FastForwardYears(10);
+            }
+
             if (GUILayout.Button("+360日", GUILayout.Width(80), GUILayout.Height(24)))
             {
                 world.AdvanceDays(360);
                 Refresh();
-            }
-
-            if (GUILayout.Button("快进1年", GUILayout.Width(80), GUILayout.Height(24)))
-            {
-                world.FastForwardYears(1);
-                Refresh();
-            }
-
-            if (GUILayout.Button("重置世界", GUILayout.Width(80), GUILayout.Height(24)))
-            {
-                world.ResetWorld();
             }
 
             if (GUILayout.Button("一致性测试 1年", GUILayout.Width(120), GUILayout.Height(24)))
@@ -197,16 +188,6 @@ namespace DivineWorld.Simulation.UI
             }
 
             GUILayout.EndHorizontal();
-
-            GUILayout.Space(4);
-            if (world.State != null)
-            {
-                ObservationHudLayout.DrawCalendarClock(
-                    world.CurrentYear,
-                    world.CurrentSeason,
-                    world.DayOfYear,
-                    world.DayInSeason);
-            }
 
             // Sliders stay above the variable observation block so IMGUI control IDs do not shift
             // when the first snapshot arrives (that shift made the first drag miss the thumb).

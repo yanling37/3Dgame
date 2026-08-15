@@ -14,6 +14,7 @@
     <Compile Include="..\..\..\Assets\Scripts\Simulation\Core\DailySimulation.cs" Link="Core\DailySimulation.cs" />
     <Compile Include="..\..\..\Assets\Scripts\Simulation\Testing\**\*.cs" Link="Testing\%(Filename)%(Extension)" />
     <Compile Include="..\..\..\Assets\Scripts\Simulation\Observation\**\*.cs" Link="Observation\%(Filename)%(Extension)" />
+    <Compile Include="..\..\..\Assets\Scripts\Simulation\Politics\**\*.cs" Link="Politics\%(Filename)%(Extension)" />
     <Compile Remove="..\..\..\Assets\Scripts\Simulation\Observation\ObservationHost.cs" />
   </ItemGroup>
 </Project>

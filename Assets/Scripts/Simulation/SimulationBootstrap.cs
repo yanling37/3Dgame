@@ -1,5 +1,6 @@
 using DivineWorld.Simulation.Core;
 using DivineWorld.Simulation.Observation;
+using DivineWorld.Simulation.Politics;
 using DivineWorld.Simulation.Presentation;
 using DivineWorld.Simulation.UI;
 using UnityEngine;
@@ -36,6 +37,14 @@ namespace DivineWorld.Simulation
                 var historyGo = new GameObject("HistoryTrendHud");
                 var historyHud = historyGo.AddComponent<HistoryTrendHud>();
                 historyHud.Bind(observation);
+
+                var politicsGo = new GameObject("PoliticsHud");
+                var politicsHud = politicsGo.AddComponent<PoliticsHud>();
+                politicsHud.Bind(world);
+
+                var persistentGo = new GameObject("PersistentHud");
+                var persistent = persistentGo.AddComponent<PersistentHud>();
+                persistent.Bind(world, hud, historyHud, politicsHud);
             }
 
             if (createMapVisualization)
@@ -59,7 +68,7 @@ namespace DivineWorld.Simulation
                 resources.Bind(observation);
             }
 
-            Debug.Log("[DivineWorld] " + ObservationVersion.HudTitle + " started (observation snapshot → history / report / compare / resource nodes).");
+            Debug.Log("[DivineWorld] " + ObservationVersion.HudTitle + " + " + PoliticsVersion.HudTitle + " started.");
         }
 
         void EnsureCamera()
