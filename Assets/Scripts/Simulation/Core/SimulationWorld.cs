@@ -93,7 +93,42 @@ namespace DivineWorld.Simulation.Core
         /// </summary>
         public bool DebugAdjustRelation(RegionId a, RegionId b, float delta)
         {
-            bool changed = PoliticsSystem.DebugAdjust(State, a, b, delta);
+            return NotifyIfPoliticsChanged(PoliticsSystem.DebugAdjust(State, a, b, delta));
+        }
+
+        public bool ApplyDiplomaticAction(DiplomaticAction action)
+        {
+            return NotifyIfPoliticsChanged(PoliticsSystem.ApplyDiplomaticAction(State, action));
+        }
+
+        public bool ImproveRelations(RegionId source, RegionId target, float delta, string reason)
+        {
+            return NotifyIfPoliticsChanged(PoliticsSystem.ImproveRelations(State, source, target, delta, reason));
+        }
+
+        public bool WorsenRelations(RegionId source, RegionId target, float delta, string reason)
+        {
+            return NotifyIfPoliticsChanged(PoliticsSystem.WorsenRelations(State, source, target, delta, reason));
+        }
+
+        public bool ApplyDiplomaticIncident(DiplomaticIncident incident)
+        {
+            return NotifyIfPoliticsChanged(PoliticsSystem.ApplyDiplomaticIncident(State, incident));
+        }
+
+        public Treaty CreateTreaty(TreatyType type, RegionId source, RegionId target, int durationDays, string reason)
+        {
+            var treaty = PoliticsSystem.CreateTreaty(State, type, source, target, durationDays, reason);
+            if (treaty != null)
+            {
+                OnDayAdvanced?.Invoke(State);
+            }
+
+            return treaty;
+        }
+
+        bool NotifyIfPoliticsChanged(bool changed)
+        {
             if (changed)
             {
                 OnDayAdvanced?.Invoke(State);

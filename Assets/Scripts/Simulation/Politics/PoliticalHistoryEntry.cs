@@ -3,38 +3,45 @@ using DivineWorld.Simulation.Data;
 namespace DivineWorld.Simulation.Politics
 {
     /// <summary>
-    /// One relation change belonging to a single undirected pair.
-    /// Observation / future P2-B reports may read this; it is not stored in ObservationHistory.
+    /// One diplomatic act belonging to an undirected pair.
+    /// Source/Target are the action direction (Empire → Theocracy), not canonical pair order.
+    /// Observation may read this; it is not stored in ObservationHistory.
     /// </summary>
     public sealed class PoliticalHistoryEntry
     {
         public int Day;
-        public float OldValue;
-        public float NewValue;
-        public string Reason;
         public RegionId SourceRegionId;
         public RegionId TargetRegionId;
+        public DiplomaticActionType ActionType;
+        public float OldValue;
+        public float Delta;
+        public float NewValue;
+        public string Reason;
 
         public PoliticalHistoryEntry Clone()
         {
             return new PoliticalHistoryEntry
             {
                 Day = Day,
-                OldValue = OldValue,
-                NewValue = NewValue,
-                Reason = Reason,
                 SourceRegionId = SourceRegionId,
-                TargetRegionId = TargetRegionId
+                TargetRegionId = TargetRegionId,
+                ActionType = ActionType,
+                OldValue = OldValue,
+                Delta = Delta,
+                NewValue = NewValue,
+                Reason = Reason
             };
         }
 
         /// <summary>
-        /// Stable Observation-facing line, e.g. "Day 120  Empire ↔ Sea  +20 → -10  Reason: Diplomatic Incident".
+        /// Observation-facing line, e.g. "Day 120  Empire → Theocracy  ImproveRelations  +10  +32 → +42  Reason: Diplomatic Gesture".
         /// </summary>
         public string ToObservationLine()
         {
             return "Day " + Day
-                + "  " + SourceRegionId + " ↔ " + TargetRegionId
+                + "  " + SourceRegionId + " → " + TargetRegionId
+                + "  " + ActionType
+                + "  " + FormatSigned(Delta)
                 + "  " + FormatSigned(OldValue) + " → " + FormatSigned(NewValue)
                 + "  Reason: " + (string.IsNullOrEmpty(Reason) ? "(none)" : Reason);
         }
