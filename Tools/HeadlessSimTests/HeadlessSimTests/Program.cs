@@ -41,6 +41,7 @@ namespace HeadlessSimTests
                     return Phase2BReportTests.Run();
                 case "p2c":
                 case "p2c-v01":
+                case "p2c-v02":
                 case "politics":
                     return Phase2CPoliticsTests.Run();
                 default:

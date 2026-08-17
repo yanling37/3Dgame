@@ -5,13 +5,16 @@ using DivineWorld.Simulation.Data;
 namespace DivineWorld.Simulation.Politics
 {
     /// <summary>
-    /// World-owned undirected political graph. Not ticked by DailySimulation / FastForward in v0.1.
+    /// World-owned undirected political graph plus directed diplomatic history and treaty placeholders.
+    /// Not ticked by DailySimulation / FastForward in v0.2.
     /// </summary>
     [Serializable]
     public class PoliticsState : IPoliticalHistorySource
     {
         public PoliticalConfig Config = PoliticalConfig.CreateDefault();
         public List<PoliticalRelation> Relations = new List<PoliticalRelation>();
+        public List<PoliticalHistoryEntry> DiplomaticHistory = new List<PoliticalHistoryEntry>();
+        public List<Treaty> Treaties = new List<Treaty>();
 
         public IReadOnlyList<PoliticalRelation> GetRelations()
         {
@@ -49,12 +52,24 @@ namespace DivineWorld.Simulation.Politics
             return relation.History;
         }
 
+        public IReadOnlyList<PoliticalHistoryEntry> GetDiplomaticHistory()
+        {
+            return DiplomaticHistory ?? (IReadOnlyList<PoliticalHistoryEntry>)Array.Empty<PoliticalHistoryEntry>();
+        }
+
+        public IReadOnlyList<Treaty> GetTreaties()
+        {
+            return Treaties ?? (IReadOnlyList<Treaty>)Array.Empty<Treaty>();
+        }
+
         public PoliticsState Clone()
         {
             var copy = new PoliticsState
             {
                 Config = Config != null ? Config.Clone() : PoliticalConfig.CreateDefault(),
-                Relations = new List<PoliticalRelation>()
+                Relations = new List<PoliticalRelation>(),
+                DiplomaticHistory = new List<PoliticalHistoryEntry>(),
+                Treaties = new List<Treaty>()
             };
 
             if (Relations != null)
@@ -64,6 +79,28 @@ namespace DivineWorld.Simulation.Politics
                     if (Relations[i] != null)
                     {
                         copy.Relations.Add(Relations[i].Clone());
+                    }
+                }
+            }
+
+            if (DiplomaticHistory != null)
+            {
+                for (int i = 0; i < DiplomaticHistory.Count; i++)
+                {
+                    if (DiplomaticHistory[i] != null)
+                    {
+                        copy.DiplomaticHistory.Add(DiplomaticHistory[i].Clone());
+                    }
+                }
+            }
+
+            if (Treaties != null)
+            {
+                for (int i = 0; i < Treaties.Count; i++)
+                {
+                    if (Treaties[i] != null)
+                    {
+                        copy.Treaties.Add(Treaties[i].Clone());
                     }
                 }
             }

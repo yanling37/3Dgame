@@ -6,7 +6,9 @@ namespace DivineWorld.Simulation.Politics
 {
     /// <summary>
     /// Undirected pair: SourceRegionId ↔ TargetRegionId (canonical Source &lt; Target).
-    /// Not Theocracy → Empire and Empire → Theocracy as separate records.
+    /// Diplomatic actions record a directed Source → Target but write this single value.
+    /// RelationState is derived from RelationValue; never assign it from an action type.
+    /// Mutate RelationValue only through <see cref="PoliticsSystem.ApplyDiplomaticAction"/> (or reset).
     /// </summary>
     [Serializable]
     public class PoliticalRelation

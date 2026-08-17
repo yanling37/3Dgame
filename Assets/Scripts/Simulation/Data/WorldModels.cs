@@ -220,8 +220,9 @@ namespace DivineWorld.Simulation.Data
         public string LastNumericError;
 
         /// <summary>
-        /// Undirected political relations. Independent from population/resource systems.
-        /// FastForward clones this field and does not mutate relation values in P2-C v0.1.
+        /// Undirected political relations plus diplomatic history / treaty placeholders.
+        /// Independent from population/resource systems. FastForward clones this field
+        /// and does not mutate relation values unless a diplomatic action is applied.
         /// </summary>
         public PoliticsState Politics;
 

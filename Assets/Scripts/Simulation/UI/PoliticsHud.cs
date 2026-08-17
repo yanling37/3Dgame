@@ -6,8 +6,8 @@ using UnityEngine;
 namespace DivineWorld.Simulation.UI
 {
     /// <summary>
-    /// P2-C v0.1 Politics / Relations observation panel plus debug +/-10.
-    /// Debug buttons only call PoliticsSystem; they do not write population or resources.
+    /// P2-C v0.2 Politics panel: undirected relations with directed diplomatic actions.
+    /// Debug / test buttons only call PoliticsSystem; they do not write population or resources.
     /// </summary>
     public class PoliticsHud : MonoBehaviour
     {
@@ -16,6 +16,10 @@ namespace DivineWorld.Simulation.UI
 
         HudWindowState _windows;
         Vector2 _scroll;
+        int _selectedPair;
+        bool[] _sourceIsFirst = { true, true, true };
+        string _reason = DiplomaticAction.DefaultImproveReason;
+        PoliticsState _boundPolitics;
 
         public void Bind(SimulationWorld simulationWorld)
         {
@@ -48,6 +52,8 @@ namespace DivineWorld.Simulation.UI
             }
 
             PoliticsSystem.EnsureInitialized(world.State);
+            ResetUiIfPoliticsReplaced();
+
             var area = ObservationHudLayout.PoliticsPanel(Screen.width, Screen.height);
             GUI.Box(area, GUIContent.none);
 
@@ -68,33 +74,52 @@ namespace DivineWorld.Simulation.UI
             }
 
             GUILayout.EndHorizontal();
-            GUILayout.Label("Politics / Relations  (undirected · no war simulation)");
+            GUILayout.Label("Diplomatic Actions  (undirected pair · directed Source → Target · no war · no trade)");
+            GUILayout.Label("War: " + WarReservation.Status + "    Peace: " + PeaceReservation.Status);
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Regions:");
-            GUILayout.Label("Theocracy");
-            GUILayout.Label("Empire");
-            GUILayout.Label("Sea");
-            GUILayout.FlexibleSpace();
+            GUILayout.Label("Reason", GUILayout.Width(52f));
+            _reason = GUILayout.TextField(_reason ?? "", GUILayout.MinWidth(160f), GUILayout.Height(22f));
             GUILayout.EndHorizontal();
 
-            GUILayout.Label("War: " + WarReservation.Status);
-            GUILayout.Label("Debug / Test (observation layer only — does not change population or resources)");
-
             _scroll = GUILayout.BeginScrollView(_scroll);
-            DrawPair(RegionId.Theocracy, RegionId.Empire);
-            DrawPair(RegionId.Theocracy, RegionId.Sea);
-            DrawPair(RegionId.Empire, RegionId.Sea);
+            DrawPair(0, RegionId.Theocracy, RegionId.Empire);
+            DrawPair(1, RegionId.Theocracy, RegionId.Sea);
+            DrawPair(2, RegionId.Empire, RegionId.Sea);
+            DrawTreaties();
+            DrawDiplomaticHistory();
             GUILayout.EndScrollView();
 
             GUILayout.EndArea();
         }
 
-        void DrawPair(RegionId a, RegionId b)
+        void ResetUiIfPoliticsReplaced()
+        {
+            var politics = world.State.Politics;
+            if (ReferenceEquals(_boundPolitics, politics))
+            {
+                return;
+            }
+
+            _boundPolitics = politics;
+            _selectedPair = 0;
+            _sourceIsFirst = new[] { true, true, true };
+            _reason = DiplomaticAction.DefaultImproveReason;
+            _scroll = Vector2.zero;
+        }
+
+        void DrawPair(int index, RegionId a, RegionId b)
         {
             var relation = world.State.Politics != null ? world.State.Politics.FindRelation(a, b) : null;
             GUILayout.BeginVertical(GUI.skin.box);
-            GUILayout.Label(a + " ↔ " + b);
+
+            bool selected = _selectedPair == index;
+            string pairTitle = a + " ↔ " + b;
+            if (GUILayout.Button(selected ? "● " + pairTitle : pairTitle, GUILayout.Height(22f)))
+            {
+                _selectedPair = index;
+            }
+
             if (relation == null)
             {
                 GUILayout.Label("(missing relation)");
@@ -102,24 +127,61 @@ namespace DivineWorld.Simulation.UI
                 return;
             }
 
-            string signed = relation.RelationValue > 0f
-                ? "+" + relation.RelationValue.ToString("0.##")
-                : relation.RelationValue.ToString("0.##");
-            GUILayout.Label(signed + "    " + relation.RelationState);
+            string signed = FormatSigned(relation.RelationValue);
+            GUILayout.Label("Current Relation  " + signed);
+            GUILayout.Label("Current State  " + relation.RelationState);
             GUILayout.Label("LastChangedDay " + relation.LastChangedDay);
 
+            if (_sourceIsFirst.Length != 3)
+            {
+                _sourceIsFirst = new[] { true, true, true };
+            }
+
+            RegionId source = _sourceIsFirst[index] ? a : b;
+            RegionId target = _sourceIsFirst[index] ? b : a;
             GUILayout.BeginHorizontal();
+            GUILayout.Label("Action:", GUILayout.Width(48f));
+            if (GUILayout.Button(source + " → " + target, GUILayout.Height(22f)))
+            {
+                _sourceIsFirst[index] = !_sourceIsFirst[index];
+            }
+
+            GUILayout.EndHorizontal();
+
             float step = world.State.Politics.Config != null
                 ? world.State.Politics.Config.DebugAdjustmentMagnitude
                 : 10f;
-            if (GUILayout.Button("Relation +" + step.ToString("0"), GUILayout.Width(110f), GUILayout.Height(22f)))
+            string reason = string.IsNullOrEmpty(_reason) ? DiplomaticAction.DefaultImproveReason : _reason;
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("改善关系", GUILayout.Width(88f), GUILayout.Height(24f)))
             {
-                world.DebugAdjustRelation(a, b, step);
+                world.ImproveRelations(source, target, step, reason);
             }
 
-            if (GUILayout.Button("Relation -" + step.ToString("0"), GUILayout.Width(110f), GUILayout.Height(22f)))
+            if (GUILayout.Button("恶化关系", GUILayout.Width(88f), GUILayout.Height(24f)))
             {
-                world.DebugAdjustRelation(a, b, -step);
+                world.WorsenRelations(source, target, step, reason);
+            }
+
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("外交事件", GUILayout.Width(88f), GUILayout.Height(22f)))
+            {
+                world.ApplyDiplomaticIncident(new DiplomaticIncident
+                {
+                    Type = DiplomaticIncidentType.BorderTension,
+                    SourceRegion = source,
+                    TargetRegion = target,
+                    Delta = -step,
+                    Reason = reason
+                });
+            }
+
+            if (GUILayout.Button("条约占位", GUILayout.Width(88f), GUILayout.Height(22f)))
+            {
+                world.CreateTreaty(TreatyType.NonAggression, source, target, 90, reason);
             }
 
             GUILayout.EndHorizontal();
@@ -127,7 +189,7 @@ namespace DivineWorld.Simulation.UI
             var history = relation.History;
             if (history != null && history.Count > 0)
             {
-                int start = history.Count > 4 ? history.Count - 4 : 0;
+                int start = history.Count > 5 ? history.Count - 5 : 0;
                 for (int i = start; i < history.Count; i++)
                 {
                     GUILayout.Label(history[i].ToObservationLine());
@@ -135,6 +197,65 @@ namespace DivineWorld.Simulation.UI
             }
 
             GUILayout.EndVertical();
+        }
+
+        void DrawTreaties()
+        {
+            var politics = world.State.Politics;
+            if (politics == null || politics.Treaties == null || politics.Treaties.Count == 0)
+            {
+                return;
+            }
+
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("Treaties (placeholder · no trade · no military)");
+            int day = world.State.TotalDays;
+            for (int i = 0; i < politics.Treaties.Count; i++)
+            {
+                var treaty = politics.Treaties[i];
+                if (treaty == null)
+                {
+                    continue;
+                }
+
+                string life = treaty.EndDay < 0 ? "open" : ("End " + treaty.EndDay);
+                string active = treaty.IsActiveAt(day) ? "Active" : "Expired";
+                GUILayout.Label(treaty.TreatyType + "  " + treaty.SourceRegion + " → " + treaty.TargetRegion
+                    + "  Day " + treaty.StartDay + "–" + life + "  " + active);
+            }
+
+            GUILayout.EndVertical();
+        }
+
+        void DrawDiplomaticHistory()
+        {
+            var politics = world.State.Politics;
+            if (politics == null || politics.DiplomaticHistory == null || politics.DiplomaticHistory.Count == 0)
+            {
+                return;
+            }
+
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("Diplomatic History");
+            var history = politics.DiplomaticHistory;
+            int start = history.Count > 8 ? history.Count - 8 : 0;
+            for (int i = start; i < history.Count; i++)
+            {
+                GUILayout.Label(history[i].ToObservationLine());
+            }
+
+            GUILayout.EndVertical();
+        }
+
+        static string FormatSigned(float value)
+        {
+            string body = value.ToString("0.##");
+            if (value > 0f && body.Length > 0 && body[0] != '+')
+            {
+                return "+" + body;
+            }
+
+            return body;
         }
     }
 }

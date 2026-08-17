@@ -4,14 +4,16 @@ using DivineWorld.Simulation.Data;
 namespace DivineWorld.Simulation.Politics
 {
     /// <summary>
-    /// Observation-facing politics API. Future P2-B History / Report may read this.
-    /// P2-C v0.1 does not write into ObservationHistory / RegionHistoryBuffer.
+    /// Observation-facing politics API. P2-B History / Report may read this.
+    /// P2-C v0.2 does not write into ObservationHistory / RegionHistoryBuffer.
     /// </summary>
     public interface IPoliticalHistorySource
     {
         IReadOnlyList<PoliticalRelation> GetRelations();
         PoliticalRelation FindRelation(RegionId a, RegionId b);
         IReadOnlyList<PoliticalHistoryEntry> GetHistory(RegionId a, RegionId b);
+        IReadOnlyList<PoliticalHistoryEntry> GetDiplomaticHistory();
+        IReadOnlyList<Treaty> GetTreaties();
     }
 
     /// <summary>
