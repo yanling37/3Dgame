@@ -1,0 +1,6 @@
+function.zip
+invoke-out.json
+payload.json
+build/
+__pycache__/
+*.pyc
