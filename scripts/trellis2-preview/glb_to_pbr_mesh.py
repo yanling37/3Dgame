@@ -95,6 +95,8 @@ def glb_to_pbr_mesh(path: str, restore_axes: bool = True) -> MeshWithPbrMaterial
         bcf = getattr(mat, "baseColorFactor", None)
         if bcf is not None:
             bcf = np.array(bcf, dtype=np.float32).reshape(-1)
+            if bcf.size and float(np.max(np.abs(bcf))) > 1.0:
+                bcf = bcf / 255.0
             base_factor = bcf[:3].tolist()
             if bcf.size >= 4:
                 alpha_factor = float(bcf[3])
