@@ -73,7 +73,9 @@ def glb_to_pbr_mesh(path: str, restore_axes: bool = True) -> MeshWithPbrMaterial
     if vis is None or getattr(vis, "uv", None) is None:
         raise RuntimeError(f"GLB has no UVs: {path}")
     uv = np.array(vis.uv, dtype=np.float32)
-    # to_glb flipped V for glTF; nvdiffrast samples with that same UV set.
+    # to_glb() writes glTF UVs (V flipped). nvdiffrast samples numpy textures
+    # with V=0 at the top, so restore the bake UVs.
+    uv[:, 1] = 1.0 - uv[:, 1]
     if uv.shape[0] != vertices.shape[0]:
         raise RuntimeError(f"UV count {uv.shape[0]} != vertices {vertices.shape[0]}")
     uv_coords = uv[faces]  # [M, 3, 2]
