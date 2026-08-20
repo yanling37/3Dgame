@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TRELLIS.2 官方预览</title>
+  <script type="module" src="./model-viewer.min.js"></script>
+  <style>
+    :root {
+      --color-accent: #6ea8fe;
+      --bg: #111318;
+      --panel: #1b1e27;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    header {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 16px 20px 8px;
+    }
+    header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+    header .hint { color: var(--muted); font-size: 13px; }
+    select, button {
+      background: #2a2e38;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .previewer-container {
+      position: relative;
+      width: min(920px, 100%);
+      margin: 0 auto;
+      padding: 12px 20px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .mode-row {
+      width: 100%;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .mode-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 88px;
+      background: transparent;
+      border: 0;
+      color: var(--text);
+      cursor: pointer;
+      padding: 0;
+    }
+    .mode-item .mode-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      opacity: 0.55;
+      border: 2px solid #555;
+      object-fit: cover;
+      background: #222;
+    }
+    .mode-item:hover .mode-btn { opacity: 0.9; transform: scale(1.06); }
+    .mode-item.active .mode-btn {
+      opacity: 1;
+      border-color: var(--color-accent);
+      transform: scale(1.08);
+    }
+    .mode-item.disabled { cursor: not-allowed; opacity: 0.45; }
+    .mode-item.disabled .mode-btn { filter: grayscale(1); }
+    .mode-item .label { font-size: 11px; color: var(--muted); text-align: center; line-height: 1.2; }
+    .mode-item.active .label { color: var(--text); }
+    .mode-item .reason { font-size: 10px; color: #e6a23c; }
+    .display-row {
+      width: 100%;
+      min-height: 420px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: var(--panel);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .display-row img {
+      max-width: 100%;
+      max-height: 72vh;
+      object-fit: contain;
+      display: none;
+    }
+    .display-row img.visible { display: block; }
+    .placeholder { color: var(--muted); padding: 40px; text-align: center; }
+    .slider-row {
+      width: 100%;
+      max-width: 420px;
+      padding: 16px 10px 0;
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      background: transparent;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      height: 8px;
+      background: #3a3f4b;
+      border-radius: 5px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 20px;
+      width: 20px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      margin-top: -6px;
+      cursor: pointer;
+    }
+    .orbit {
+      width: min(920px, 100%);
+      margin: 0 auto 32px;
+      padding: 0 20px;
+    }
+    .orbit summary {
+      cursor: pointer;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    model-viewer {
+      width: 100%;
+      height: 520px;
+      background: #0b0d12;
+      border-radius: 16px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>TRELLIS.2 官方预览</h1>
+    <select id="models" aria-label="选择模型"></select>
+    <span class="hint">Normal / Clay / Base color 来自官方 render_snapshot；HDRI 只是环境光。下方 3D 拖转是附加网格查看，不是官方界面。</span>
+  </header>
+
+  <div class="previewer-container">
+    <div class="mode-row" id="modes"></div>
+    <div class="display-row" id="display">
+      <div class="placeholder" id="empty">加载 models.json…</div>
+    </div>
+    <div class="slider-row">
+      <input type="range" id="slider" min="0" max="7" value="3" step="1" />
+    </div>
+  </div>
+
+  <section class="orbit">
+    <details>
+      <summary>附加：3D 拖转查看网格 / PBR（model-viewer，不是官方预览）</summary>
+      <model-viewer
+        id="viewer"
+        camera-controls
+        touch-action="pan-y"
+        shadow-intensity="1"
+        exposure="1"
+        environment-image="neutral"
+        auto-rotate
+        auto-rotate-delay="0"
+      ></model-viewer>
+    </details>
+  </section>
+
+  <script>
+    const modesEl = document.getElementById("models");
+    const modeRow = document.getElementById("modes");
+    const display = document.getElementById("display");
+    const empty = document.getElementById("empty");
+    const slider = document.getElementById("slider");
+    const viewer = document.getElementById("viewer");
+
+    let catalog = { modes: [], models: [], default_mode: "shaded_forest", fallback_mode: "normal", default_step: 3 };
+    let currentModel = null;
+    let currentMode = "normal";
+    let currentStep = 3;
+
+    function snapshotOf(model, key) {
+      return (model && model.snapshots && model.snapshots[key]) || { ready: false, file: null, views: [] };
+    }
+
+    function isReady(snap) {
+      return !!(snap && snap.ready && (snap.file || (snap.views && snap.views.length)));
+    }
+
+    function srcFor(snap, step) {
+      if (snap.views && snap.views[step]) return "./" + encodeURIComponent(snap.views[step]);
+      if (snap.file) return "./" + encodeURIComponent(snap.file);
+      return null;
+    }
+
+    function renderModeButtons() {
+      modeRow.innerHTML = "";
+      catalog.modes.forEach((mode) => {
+        const snap = snapshotOf(currentModel, mode.key);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "mode-item";
+        btn.dataset.key = mode.key;
+        const ready = isReady(snap);
+        const hdriBlocked = mode.hdri && !ready;
+        if (hdriBlocked) btn.classList.add("disabled");
+        if (mode.key === currentMode) btn.classList.add("active");
+        btn.title = hdriBlocked ? "EXR 未就绪" : mode.name;
+        btn.innerHTML =
+          '<img class="mode-btn" alt="" src="./' + encodeURIComponent(mode.icon) + '">' +
+          '<span class="label">' + mode.name + "</span>" +
+          (hdriBlocked ? '<span class="reason">EXR 未就绪</span>' : "");
+        btn.addEventListener("click", () => {
+          if (hdriBlocked) return;
+          currentMode = mode.key;
+          refreshView();
+        });
+        modeRow.appendChild(btn);
+      });
+    }
+
+    function ensureImgs(model) {
+      display.querySelectorAll("img.previewer-main-image").forEach((n) => n.remove());
+      catalog.modes.forEach((mode, mi) => {
+        const snap = snapshotOf(model, mode.key);
+        const views = (snap.views && snap.views.length) ? snap.views : (snap.file ? [snap.file] : []);
+        views.forEach((file, si) => {
+          const img = document.createElement("img");
+          img.className = "previewer-main-image";
+          img.id = "view-m" + mi + "-s" + si;
+          img.alt = mode.name;
+          img.loading = "eager";
+          img.src = "./" + encodeURIComponent(file);
+          display.appendChild(img);
+        });
+      });
+    }
+
+    function pickDefaultMode(model) {
+      const want = catalog.default_mode;
+      if (isReady(snapshotOf(model, want))) return want;
+      if (isReady(snapshotOf(model, catalog.fallback_mode))) return catalog.fallback_mode;
+      const first = catalog.modes.find((m) => isReady(snapshotOf(model, m.key)));
+      return first ? first.key : catalog.fallback_mode;
+    }
+
+    function refreshView() {
+      const imgs = display.querySelectorAll(".previewer-main-image");
+      imgs.forEach((img) => img.classList.remove("visible"));
+      const mi = catalog.modes.findIndex((m) => m.key === currentMode);
+      const snap = snapshotOf(currentModel, currentMode);
+      const n = (snap.views && snap.views.length) ? snap.views.length : (snap.file ? 1 : 0);
+      slider.max = Math.max(0, n - 1);
+      if (currentStep > n - 1) currentStep = Math.max(0, n - 1);
+      const target = document.getElementById("view-m" + mi + "-s" + currentStep);
+      if (target) {
+        empty.style.display = "none";
+        target.classList.add("visible");
+      } else {
+        empty.style.display = "block";
+        empty.textContent = snapshotOf(currentModel, currentMode).reason || "该模式没有 snapshot";
+      }
+      modeRow.querySelectorAll(".mode-item").forEach((el) => {
+        el.classList.toggle("active", el.dataset.key === currentMode);
+      });
+    }
+
+    function loadModel(model) {
+      currentModel = model;
+      currentStep = catalog.default_step || 3;
+      slider.value = String(currentStep);
+      currentMode = pickDefaultMode(model);
+      ensureImgs(model);
+      renderModeButtons();
+      refreshView();
+      if (model && model.file && viewer) {
+        viewer.src = "./" + encodeURIComponent(model.file) + "?t=" + Date.now();
+      }
+    }
+
+    slider.addEventListener("input", () => {
+      currentStep = parseInt(slider.value, 10);
+      refreshView();
+    });
+    modesEl.addEventListener("change", () => {
+      const model = catalog.models.find((m) => m.id === modesEl.value);
+      if (model) loadModel(model);
+    });
+
+    fetch("./models.json?t=" + Date.now())
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          catalog.models = data.map((it) => ({
+            id: (it.file || "").replace(/\.glb$/, ""),
+            label: it.label || it.file,
+            file: it.file,
+            snapshots: {},
+          }));
+        } else {
+          catalog = Object.assign(catalog, data);
+        }
+        modesEl.innerHTML = "";
+        catalog.models.forEach((m, i) => {
+          const opt = document.createElement("option");
+          opt.value = m.id;
+          opt.textContent = m.label || m.id;
+          if (i === 0) opt.selected = true;
+          modesEl.appendChild(opt);
+        });
+        if (!catalog.models.length) {
+          empty.textContent = "models.json 里没有模型";
+          return;
+        }
+        loadModel(catalog.models[0]);
+      })
+      .catch((err) => {
+        empty.textContent = "无法读取 models.json: " + err;
+      });
+  </script>
+</body>
+</html>
