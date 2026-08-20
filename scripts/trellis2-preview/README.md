@@ -34,7 +34,16 @@ python snapshot_official.py --glb /home/ubuntu/trellis2/app/grace_20260820_0754.
 
 ## OpenCV / EXR
 
-机器上是 OpenCV 5.0.0，`cv2.imread(*.exr)` 经常返回空图。不要为此重装 CUDA/PyTorch。`hdri_utils.py` 用 `OpenEXR` 读官方 `assets/hdri/{forest,sunset,courtyard}.exr`，再包 `trellis2.renderers.EnvMap`。
+机器上是 OpenCV 5.0.0，`cv2.imread(*.exr)` 经常返回空图。不要为此重装 CUDA/PyTorch。`hdri_utils.py` 用 `OpenEXR==3.4.6` 读官方 `assets/hdri/{forest,sunset,courtyard}.exr`（真文件，不是 LFS 指针；forest 552641 字节），再包 `trellis2.renderers.EnvMap`。
+
+若新环境还没有该包：
+
+```bash
+conda activate trellis2
+pip install OpenEXR==3.4.6
+```
+
+不要动 PyTorch / CUDA / Driver。
 
 ## 发布约束
 
