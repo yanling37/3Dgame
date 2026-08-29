@@ -138,19 +138,32 @@ def wait_history(prompt_id: str, timeout: int = 7200) -> dict:
 def collect_output_files(entry: dict) -> List[str]:
     out_dir = os.path.join(COMFY, "output")
     files = []
-    for node_out in (entry.get("outputs") or {}).values():
-        for key, items in node_out.items():
-            if not isinstance(items, list):
-                continue
-            for item in items:
-                if not isinstance(item, dict):
-                    continue
-                name = item.get("filename") or item.get("3d") or item.get("file")
-                sub = item.get("subfolder") or ""
-                if not name:
-                    continue
-                path = os.path.join(out_dir, sub, name) if sub else os.path.join(out_dir, name)
-                files.append(path)
+
+    def _add(path: str) -> None:
+        if not path:
+            return
+        if not os.path.isabs(path):
+            path = os.path.join(out_dir, path)
+        files.append(path)
+
+    def _walk(obj: Any) -> None:
+        if isinstance(obj, str):
+            if obj.lower().endswith((".glb", ".gltf", ".obj")):
+                _add(obj)
+            return
+        if isinstance(obj, dict):
+            name = obj.get("filename") or obj.get("3d") or obj.get("file")
+            if name:
+                sub = obj.get("subfolder") or ""
+                _add(os.path.join(sub, name) if sub else name)
+            for v in obj.values():
+                _walk(v)
+            return
+        if isinstance(obj, list):
+            for v in obj:
+                _walk(v)
+
+    _walk(entry.get("outputs") or {})
     return files
 
 
@@ -175,11 +188,24 @@ def submit(workflow_path: str, timeout: int = 7200) -> dict:
     if not pid:
         raise SystemExit(f"no prompt_id: {res}")
     print("prompt_id", pid, flush=True)
+    t_submit = time.time()
     hist = wait_history(pid, timeout=timeout)
     status = (hist.get("status") or {}).get("status_str") or hist.get("status")
     print("status", status, flush=True)
     files = collect_output_files(hist)
-    glbs = [f for f in files if f.lower().endswith(".glb")]
+    glbs = [f for f in files if f.lower().endswith(".glb") and os.path.isfile(f)]
+    if not glbs:
+        out_root = os.path.join(COMFY, "output")
+        found = []
+        for dirpath, _, names in os.walk(out_root):
+            for name in names:
+                if not name.lower().endswith(".glb"):
+                    continue
+                path = os.path.join(dirpath, name)
+                if os.path.getmtime(path) >= t_submit - 5:
+                    found.append(path)
+        found.sort(key=os.path.getmtime, reverse=True)
+        glbs = found
     return {"prompt_id": pid, "status": status, "files": files, "glbs": glbs, "history": hist}
 
 
