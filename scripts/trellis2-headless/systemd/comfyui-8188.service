@@ -1,0 +1,18 @@
+[Unit]
+Description=ComfyUI TRELLIS.2 :8188
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/trellis2/cache/comfyui
+Environment=HF_HOME=/home/ubuntu/trellis2/cache/huggingface
+Environment=HF_HUB_OFFLINE=1
+Environment=TRANSFORMERS_OFFLINE=1
+Environment=PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+Environment=SKINTOKEN_FORCE_HEADLESS=1
+ExecStart=/home/ubuntu/miniconda3/envs/trellis2/bin/python main.py --listen 0.0.0.0 --port 8188 --disable-auto-launch
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

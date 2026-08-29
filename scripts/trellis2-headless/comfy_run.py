@@ -1,0 +1,307 @@
+#!/usr/bin/env python3
+"""Submit a ComfyUI UI-format workflow to /prompt and wait for GLB output."""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import time
+import urllib.error
+import urllib.request
+import uuid
+from typing import Any, Dict, List, Optional, Tuple
+
+COMFY = os.environ.get("COMFYUI_DIR", "/home/ubuntu/trellis2/cache/comfyui")
+APP = os.environ.get("TRELLIS2_APP", "/home/ubuntu/trellis2/app")
+SERVER = os.environ.get("COMFYUI_URL", "http://127.0.0.1:8188")
+
+
+def _http_json(method: str, path: str, body: Optional[dict] = None, timeout: int = 60) -> Any:
+    data = None if body is None else json.dumps(body).encode("utf-8")
+    req = urllib.request.Request(
+        SERVER + path,
+        data=data,
+        method=method,
+        headers={"Content-Type": "application/json"} if data else {},
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        raw = resp.read()
+        if not raw:
+            return None
+        return json.loads(raw.decode("utf-8"))
+
+
+def object_info() -> dict:
+    return _http_json("GET", "/object_info", timeout=120)
+
+
+WIDGET_KINDS = {"INT", "FLOAT", "BOOLEAN", "STRING"}
+SEED_CONTROL = {"fixed", "randomize", "increment", "decrement"}
+
+
+def _is_widget_spec(typ: Any) -> bool:
+    """True if this input is a UI widget, not a linked socket."""
+    kind = typ[0] if isinstance(typ, (list, tuple)) else typ
+    if isinstance(kind, (list, tuple)):
+        return True  # combo or file list
+    return kind in WIDGET_KINDS
+
+
+def _widget_default(typ: Any) -> Any:
+    if isinstance(typ, (list, tuple)) and len(typ) >= 2 and isinstance(typ[1], dict) and "default" in typ[1]:
+        return typ[1]["default"]
+    kind = typ[0] if isinstance(typ, (list, tuple)) else typ
+    if isinstance(kind, (list, tuple)) and kind:
+        return kind[0]
+    return None
+
+
+def ui_to_api(workflow: dict, info: dict) -> Tuple[dict, List[str]]:
+    """Convert ComfyUI UI graph to API prompt. Returns (prompt, missing_types)."""
+    missing: List[str] = []
+    links = {}
+    for link in workflow.get("links") or []:
+        # [id, from_node, from_slot, to_node, to_slot, type]
+        links[link[0]] = link
+
+    prompt: Dict[str, Any] = {}
+    for node in workflow.get("nodes") or []:
+        ntype = node.get("type") or ""
+        nid = str(node.get("id"))
+        if ntype in ("Note", "Reroute", "MarkdownNote"):
+            continue
+        if ntype in ("GetNode", "SetNode"):
+            # subgraph helpers; skip if not in object_info
+            if ntype not in info:
+                continue
+        if ntype not in info:
+            missing.append(f"{nid}:{ntype}")
+            continue
+        spec = info[ntype]
+        widget_names: List[str] = []
+        widget_specs: Dict[str, Any] = {}
+        required_widgets: List[str] = []
+        for section in ("required", "optional"):
+            items = spec.get("input", {}).get(section) or {}
+            if not isinstance(items, dict):
+                continue
+            for name, typ in items.items():
+                if _is_widget_spec(typ):
+                    widget_names.append(name)
+                    widget_specs[name] = typ
+                    if section == "required":
+                        required_widgets.append(name)
+
+        inputs: Dict[str, Any] = {}
+        wv = list(node.get("widgets_values") or [])
+        # flatten seed [value, "fixed"] pairs some UIs nest
+        flat: List[Any] = []
+        for v in wv:
+            if isinstance(v, list):
+                flat.extend(v)
+            else:
+                flat.append(v)
+        wv = flat
+        wi = 0
+        for name in widget_names:
+            if wi >= len(wv):
+                break
+            val = wv[wi]
+            wi += 1
+            if isinstance(val, str) and val.lower() in SEED_CONTROL:
+                if wi >= len(wv):
+                    break
+                val = wv[wi]
+                wi += 1
+            inputs[name] = val
+            if name.lower() in ("seed", "noise_seed") and wi < len(wv) and isinstance(wv[wi], str) and wv[wi].lower() in SEED_CONTROL:
+                wi += 1
+
+        for inp in node.get("inputs") or []:
+            name = inp.get("name")
+            link_id = inp.get("link")
+            if not name or name.startswith("_") or name == "":
+                continue
+            if link_id is None:
+                continue
+            link = links.get(link_id)
+            if not link:
+                continue
+            from_node, from_slot = link[1], link[2]
+            inputs[name] = [str(from_node), int(from_slot)]
+
+        for name in required_widgets:
+            if name in inputs:
+                continue
+            default = _widget_default(widget_specs.get(name))
+            if default is not None:
+                inputs[name] = default
+
+        prompt[nid] = {"class_type": ntype, "inputs": inputs}
+    return prompt, missing
+
+
+def wait_history(prompt_id: str, timeout: int = 7200) -> dict:
+    t0 = time.time()
+    consecutive_down = 0
+    while time.time() - t0 < timeout:
+        try:
+            hist = _http_json("GET", f"/history/{prompt_id}", timeout=30)
+            consecutive_down = 0
+        except Exception:
+            consecutive_down += 1
+            if consecutive_down >= 5:
+                raise SystemExit(f"ComfyUI {SERVER} went away while waiting for {prompt_id}")
+            time.sleep(2)
+            continue
+        if hist and prompt_id in hist:
+            return hist[prompt_id]
+        time.sleep(2)
+    raise TimeoutError(f"ComfyUI prompt {prompt_id} timed out after {timeout}s")
+
+
+def extract_error(entry: dict) -> Optional[dict]:
+    status = entry.get("status") or {}
+    messages = status.get("messages") if isinstance(status, dict) else None
+    if not messages:
+        return None
+    for msg in messages:
+        if not (isinstance(msg, (list, tuple)) and msg and msg[0] == "execution_error"):
+            continue
+        data = msg[1] if len(msg) > 1 and isinstance(msg[1], dict) else {}
+        tb = data.get("traceback") or []
+        if isinstance(tb, list):
+            tb_s = "".join(tb)[:3000]
+        else:
+            tb_s = str(tb)[:3000]
+        return {
+            "node_id": data.get("node_id"),
+            "node_type": data.get("node_type"),
+            "exception_type": data.get("exception_type"),
+            "exception_message": (data.get("exception_message") or "").strip()[:2000],
+            "traceback": tb_s,
+        }
+    return None
+
+
+def collect_output_files(entry: dict) -> List[str]:
+    out_dir = os.path.join(COMFY, "output")
+    files = []
+
+    def _add(path: str) -> None:
+        if not path:
+            return
+        if not os.path.isabs(path):
+            path = os.path.join(out_dir, path)
+        files.append(path)
+
+    def _walk(obj: Any) -> None:
+        if isinstance(obj, str):
+            if obj.lower().endswith((".glb", ".gltf", ".obj")):
+                _add(obj)
+            return
+        if isinstance(obj, dict):
+            name = obj.get("filename") or obj.get("3d") or obj.get("file")
+            if name:
+                sub = obj.get("subfolder") or ""
+                _add(os.path.join(sub, name) if sub else name)
+            for v in obj.values():
+                _walk(v)
+            return
+        if isinstance(obj, list):
+            for v in obj:
+                _walk(v)
+
+    _walk(entry.get("outputs") or {})
+    return files
+
+
+def submit(workflow_path: str, timeout: int = 7200) -> dict:
+    wf = json.load(open(workflow_path, encoding="utf-8"))
+    info = object_info()
+    prompt, missing = ui_to_api(wf, info)
+    if missing:
+        print("missing_nodes", missing, flush=True)
+        raise SystemExit(
+            "ComfyUI is missing node types: " + ", ".join(missing[:12])
+            + (" …" if len(missing) > 12 else "")
+        )
+    client_id = str(uuid.uuid4())
+    body = {"prompt": prompt, "client_id": client_id}
+    try:
+        res = _http_json("POST", "/prompt", body, timeout=120)
+    except urllib.error.HTTPError as e:
+        err = e.read().decode("utf-8", "replace")
+        raise SystemExit(f"/prompt rejected ({e.code}): {err[:4000]}")
+    pid = res.get("prompt_id")
+    if not pid:
+        raise SystemExit(f"no prompt_id: {res}")
+    print("prompt_id", pid, flush=True)
+    t_submit = time.time()
+    hist = wait_history(pid, timeout=timeout)
+    status = (hist.get("status") or {}).get("status_str") or hist.get("status")
+    err = extract_error(hist)
+    print("status", status, flush=True)
+    if err:
+        print(
+            "execution_error",
+            err.get("node_type"),
+            "node",
+            err.get("node_id"),
+            err.get("exception_type"),
+            err.get("exception_message"),
+            flush=True,
+        )
+    files = collect_output_files(hist)
+    glbs = [f for f in files if f.lower().endswith(".glb") and os.path.isfile(f)]
+    if not glbs:
+        out_root = os.path.join(COMFY, "output")
+        found = []
+        for dirpath, _, names in os.walk(out_root):
+            for name in names:
+                if not name.lower().endswith(".glb"):
+                    continue
+                path = os.path.join(dirpath, name)
+                if os.path.getmtime(path) >= t_submit - 5:
+                    found.append(path)
+        found.sort(key=os.path.getmtime, reverse=True)
+        glbs = found
+    return {
+        "prompt_id": pid,
+        "status": status,
+        "files": files,
+        "glbs": glbs,
+        "error": err,
+        "history": hist,
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Run a patched ComfyUI UI workflow via /prompt")
+    parser.add_argument("workflow")
+    parser.add_argument("--timeout", type=int, default=7200)
+    parser.add_argument("--json-out")
+    args = parser.parse_args()
+    result = submit(args.workflow, timeout=args.timeout)
+    slim = {k: result[k] for k in ("prompt_id", "status", "files", "glbs", "error")}
+    print(json.dumps(slim, indent=2))
+    if args.json_out:
+        with open(args.json_out, "w", encoding="utf-8") as f:
+            json.dump(slim, f, indent=2)
+    if result.get("error"):
+        err = result["error"]
+        print(
+            f"ComfyUI node {err.get('node_id')} {err.get('node_type')} "
+            f"{err.get('exception_type')}: {err.get('exception_message')}",
+            file=sys.stderr,
+        )
+        return 3
+    if not result["glbs"]:
+        print("no GLB in ComfyUI outputs; check the workflow export node", file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
