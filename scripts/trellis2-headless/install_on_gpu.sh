@@ -129,12 +129,15 @@ echo "== patch workflows =="
 python "$TRELLIS2_APP/scripts/patch_workflows.py" --resolution 1024 --texture-size 2048 --steps 12
 
 echo "== 4B offline check (Instance Store may be empty after Stop) =="
+# Official package lives at TRELLIS2_APP (not pip-installed as trellis2).
+cd "$TRELLIS2_APP"
+export PYTHONPATH="$TRELLIS2_APP${PYTHONPATH:+:$PYTHONPATH}"
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 HF_HOME="$HF_HOME"
 set +e
 python - <<'PY'
-from transformers.utils.hub import cached_file
-import os
+import os, sys
 print("HF_HOME", os.environ.get("HF_HOME"))
+print("cwd", os.getcwd(), "path0", sys.path[0])
 try:
     from trellis2.pipelines import Trellis2ImageTo3DPipeline
     p=Trellis2ImageTo3DPipeline.from_pretrained("microsoft/TRELLIS.2-4B")
