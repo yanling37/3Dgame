@@ -1,6 +1,9 @@
 # TRELLIS.2 无头 Web + 多视图 + Projection + SkinToken
 
-运行位置：GPU `ubuntu@18.180.160.51`（只用弹性 IP），conda `trellis2`，代码 `/home/ubuntu/trellis2/app`。
+运行位置：GPU `ubuntu@18.180.160.51`（只用弹性 IP），代码 `/home/ubuntu/trellis2/app`。
+
+- Gradio `:7860` / `:7861`：conda `trellis2`（PyTorch `2.6.0+cu124`，不要改）
+- ComfyUI `:8188`：conda `skintoken`（Python 3.11，同一套 `2.6.0+cu124`）。SkinToken 的 pip 不能装进 `trellis2`，否则会拉来需要 `libcudart.so.13` 的 `torchaudio`。
 
 本目录脚本会复制到 GPU 的 `$TRELLIS2_APP/scripts/`。
 

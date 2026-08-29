@@ -96,25 +96,59 @@ readlink -f models/facebook/dinov3-vitl16-pretrain-lvd1689m
 test -f models/facebook/dinov3-vitl16-pretrain-lvd1689m/config.json
 ln -sfn "$TRELLIS2_APP/assets/multiview/grace" "$COMFYUI_DIR/input/grace"
 
-echo "== pip (constraint: do not change torch) =="
-CONSTRAINT="$TRELLIS2_APP/logs/pip-torch-constraint.txt"
-python - <<PY
-import torch, pathlib
-p=pathlib.Path("$CONSTRAINT")
-p.write_text(f"torch=={torch.__version__.split('+')[0]}\n")
-print("constraint", p.read_text())
+echo "== keep trellis2 torch: drop CUDA13 torchaudio if a previous pip pulled it =="
+python - <<'PY'
+import importlib.metadata as m, subprocess, sys
+try:
+    v = m.version("torchaudio")
+except Exception:
+    print("trellis2_no_torchaudio")
+    raise SystemExit(0)
+print("trellis2_torchaudio", v)
+if not str(v).startswith("2.6"):
+    subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", "torchaudio"])
+    print("uninstalled_mismatched_torchaudio", v)
 PY
-if [[ "$SKIP_COMFY_PIP" != "1" ]]; then
-  pip install -c "$CONSTRAINT" -r requirements.txt
-  pip install -c "$CONSTRAINT" -r custom_nodes/ComfyUI-Trellis2/requirements.txt || \
-    echo "WARN: ComfyUI-Trellis2 requirements incomplete; reuse trellis2 env packages"
-  pip install -c "$CONSTRAINT" -r custom_nodes/ComfyUI-SkinToken/requirements.txt || \
-    echo "WARN: SkinToken requirements incomplete"
-  python - <<'PY'
+python - <<'PY'
 import torch, sys
-print("torch_after_pip", torch.__version__)
+print("trellis2_torch", torch.__version__, "cuda", torch.version.cuda)
 if "2.6.0" not in torch.__version__:
-    sys.exit("PyTorch changed; aborting")
+    sys.exit("trellis2 PyTorch changed; aborting")
+PY
+
+echo "== ComfyUI pip into conda env skintoken (Python 3.11); do not touch trellis2 torch =="
+SKIN_ENV="/home/ubuntu/miniconda3/envs/skintoken"
+CONSTRAINT="$TRELLIS2_APP/logs/pip-torch-constraint.txt"
+printf '%s\n' "torch==2.6.0" "torchvision==0.21.0" "torchaudio==2.6.0" > "$CONSTRAINT"
+echo "constraint $(tr '\n' ' ' < "$CONSTRAINT")"
+if [[ "$SKIP_COMFY_PIP" != "1" ]]; then
+  if [[ ! -x "$SKIN_ENV/bin/python" ]]; then
+    conda create -y -n skintoken python=3.11 pip
+  fi
+  "$SKIN_ENV/bin/pip" install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 \
+    --index-url https://download.pytorch.org/whl/cu124
+  "$SKIN_ENV/bin/python" - <<'PY'
+import torch, sys
+print("skintoken_torch", torch.__version__, "cuda", torch.version.cuda)
+if "2.6.0" not in torch.__version__ or "cu124" not in torch.__version__:
+    sys.exit("skintoken torch is not 2.6.0+cu124")
+PY
+  CU124="--extra-index-url https://download.pytorch.org/whl/cu124"
+  "$SKIN_ENV/bin/pip" install -c "$CONSTRAINT" $CU124 -r "$COMFYUI_DIR/requirements.txt"
+  "$SKIN_ENV/bin/pip" install -c "$CONSTRAINT" $CU124 -r "$COMFYUI_DIR/custom_nodes/ComfyUI-Trellis2/requirements.txt" || \
+    echo "WARN: ComfyUI-Trellis2 requirements incomplete"
+  "$SKIN_ENV/bin/pip" install -c "$CONSTRAINT" $CU124 -r "$COMFYUI_DIR/custom_nodes/ComfyUI-SkinToken/requirements.txt" || \
+    echo "WARN: SkinToken requirements incomplete"
+  "$SKIN_ENV/bin/python" - <<'PY'
+import torch, sys
+print("skintoken_torch_after_pip", torch.__version__, "cuda", torch.version.cuda)
+if "2.6.0" not in torch.__version__ or "cu124" not in torch.__version__:
+    sys.exit("skintoken PyTorch changed; aborting")
+try:
+    import torchaudio
+    print("skintoken_torchaudio", torchaudio.__version__)
+except Exception as e:
+    print("skintoken_torchaudio_skip", type(e).__name__, e)
 PY
 fi
 

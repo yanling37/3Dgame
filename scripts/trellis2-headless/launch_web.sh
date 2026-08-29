@@ -53,8 +53,13 @@ if [[ "$WHAT" == "all" || "$WHAT" == "comfy" ]]; then
     exit 1
   fi
   cd "$COMFYUI_DIR"
+  if [[ -z "${COMFY_PYTHON:-}" || ! -x "${COMFY_PYTHON}" ]]; then
+    echo "missing ComfyUI python (expected conda env skintoken). Run install_on_gpu.sh" >&2
+    exit 1
+  fi
+  echo "comfy python=$COMFY_PYTHON"
   start_one comfy "$TRELLIS2_APP/logs/comfyui_8188.log" "$TRELLIS2_APP/logs/comfyui_8188.pid" \
-    python main.py --listen 0.0.0.0 --port 8188 --disable-auto-launch
+    "$COMFY_PYTHON" main.py --listen 0.0.0.0 --port 8188 --disable-auto-launch
   cd "$TRELLIS2_APP"
 fi
 
