@@ -41,17 +41,13 @@ def _patch_node(node: dict, prefix: str, resolution: int, texture_size: int, ste
         wv[0] = mesh
     elif ntype == "Trellis2LoadImageWithTransparency":
         if "front" in title:
-            wv[0] = "grace/front.png"
+            wv[0] = "front.png"
         elif "back" in title:
-            wv[0] = "grace/back.png"
+            wv[0] = "back.png"
         elif "left" in title or "side" in title:
-            side = os.path.join(GRACE, "left.png")
-            alt = os.path.join(GRACE, "side.png")
-            wv[0] = "grace/left.png" if os.path.isfile(side) else (
-                "grace/side.png" if os.path.isfile(alt) else "grace/side.png"
-            )
+            wv[0] = "left.png" if os.path.isfile(os.path.join(GRACE, "left.png")) else "side.png"
         elif "right" in title:
-            wv[0] = "grace/right.png"
+            wv[0] = "right.png"
         elif isinstance(wv[0], str) and wv[0].endswith(".png"):
             # first unmatched image loader: leave; caller may have only front/back
             pass

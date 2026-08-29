@@ -36,6 +36,18 @@ def object_info() -> dict:
     return _http_json("GET", "/object_info", timeout=120)
 
 
+WIDGET_KINDS = {"INT", "FLOAT", "BOOLEAN", "STRING"}
+SEED_CONTROL = {"fixed", "randomize", "increment", "decrement"}
+
+
+def _is_widget_spec(typ: Any) -> bool:
+    """True if this input is a UI widget, not a linked socket."""
+    kind = typ[0] if isinstance(typ, (list, tuple)) else typ
+    if isinstance(kind, (list, tuple)):
+        return True  # combo or file list
+    return kind in WIDGET_KINDS
+
+
 def ui_to_api(workflow: dict, info: dict) -> Tuple[dict, List[str]]:
     """Convert ComfyUI UI graph to API prompt. Returns (prompt, missing_types)."""
     missing: List[str] = []
@@ -58,32 +70,38 @@ def ui_to_api(workflow: dict, info: dict) -> Tuple[dict, List[str]]:
             missing.append(f"{nid}:{ntype}")
             continue
         spec = info[ntype]
-        input_order: List[str] = []
         widget_names: List[str] = []
         for section in ("required", "optional"):
-            for name, typ in (spec.get("input", {}).get(section) or {}).items():
-                input_order.append(name)
-                # widget if not a pure linked type without extra options that imply combo/number
-                kind = typ[0] if isinstance(typ, (list, tuple)) else typ
-                if kind in (
-                    "IMAGE", "LATENT", "MODEL", "CLIP", "VAE", "CONDITIONING",
-                    "TRIMESH", "MESH", "MASK", "CONTROL_NET", "STYLE_MODEL",
-                    "HY3DCAMERA", "LOAD3D_CAMERA", "SKINTOKEN_ASSET",
-                ):
-                    continue
-                widget_names.append(name)
+            items = spec.get("input", {}).get(section) or {}
+            if not isinstance(items, dict):
+                continue
+            for name, typ in items.items():
+                if _is_widget_spec(typ):
+                    widget_names.append(name)
 
         inputs: Dict[str, Any] = {}
         wv = list(node.get("widgets_values") or [])
+        # flatten seed [value, "fixed"] pairs some UIs nest
+        flat: List[Any] = []
+        for v in wv:
+            if isinstance(v, list):
+                flat.extend(v)
+            else:
+                flat.append(v)
+        wv = flat
         wi = 0
         for name in widget_names:
             if wi >= len(wv):
                 break
             val = wv[wi]
-            # seed control pair: int then "fixed"/"randomize"
-            inputs[name] = val
             wi += 1
-            if name.lower() in ("seed", "noise_seed") and wi < len(wv) and isinstance(wv[wi], str):
+            if isinstance(val, str) and val.lower() in SEED_CONTROL:
+                if wi >= len(wv):
+                    break
+                val = wv[wi]
+                wi += 1
+            inputs[name] = val
+            if name.lower() in ("seed", "noise_seed") and wi < len(wv) and isinstance(wv[wi], str) and wv[wi].lower() in SEED_CONTROL:
                 wi += 1
 
         for inp in node.get("inputs") or []:
