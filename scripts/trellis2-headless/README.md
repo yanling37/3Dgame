@@ -3,8 +3,8 @@
 运行位置：GPU `ubuntu@18.180.160.51`（只用弹性 IP），代码 `/home/ubuntu/trellis2/app`。
 
 - Gradio `:7860` / `:7861`：conda `trellis2`（PyTorch `2.6.0+cu124`，不要改）
-- ComfyUI `:8188`：同样用 conda `trellis2`。`flash_attn` / `o_voxel` / `nvdiffrast` / `flex_gemm` 是给 CPython 3.10 编译的，Python 3.11 的 `skintoken` 环境装不上这些扩展。
-- conda `skintoken`（3.11）仍会创建，并用同一套 `2.6.0+cu124` 跑 SkinToken 的 pip，避免再把需要 `libcudart.so.13` 的 `torchaudio 2.11` 装进 `trellis2`。若 `trellis2` 被污染，脚本会卸掉不匹配的 torchaudio，并可以再装 `torchaudio==2.6.0+cu124`。
+- ComfyUI `:8188`：conda `trellis2`，**ComfyUI 钉在 `v0.30.2`**。更新的 ComfyUI 依赖 `comfy-kitchen`（`list[int]` / 要 CUDA 13 的 torch），和冻结的 `2.6.0+cu124` 不兼容。
+- conda `skintoken`（3.11）仍会创建，并用同一套 `2.6.0+cu124` 跑 SkinToken 的 pip，避免再把需要 `libcudart.so.13` 的 `torchaudio 2.11` 装进 `trellis2`。ComfyUI 进程本身仍走 `trellis2`，因为 `flash_attn` / `o_voxel` 是 3.10 扩展。
 
 本目录脚本会复制到 GPU 的 `$TRELLIS2_APP/scripts/`。
 
@@ -33,9 +33,17 @@ bash /home/ubuntu/trellis2/app/scripts/stop_web.sh
 | Gradio 只刷贴图 | `0.0.0.0:7861` | `logs/app_7861.log` | `logs/app_7861.pid` |
 | ComfyUI | `0.0.0.0:8188` | `logs/comfyui_8188.log` | `logs/comfyui_8188.pid` |
 
-官方 `app.py` 没有 `--listen`（那是 ComfyUI 参数）。`launch_gradio.py` 把 `--listen/--port` 转成 Gradio `server_name/server_port`。OpenCV 5 读不了 EXR，启动时用已有 `OpenEXR` 补 `cv2.imread`。
+官方 `app.py` 没有 `--listen`（那是 ComfyUI 参数）。`launch_gradio.py` 把 `--listen/--port` 转成 Gradio `server_name/server_port`。OpenCV 5 读不了 EXR，启动时用已有 `OpenEXR` 直接读（不要再走 `cv2.imread`，会递归）。
+
+三个口都绑 `0.0.0.0`。安全组默认不放行 7860/7861/8188 时，本机 `127.0.0.1` 可用；公网要用 SG 或 Pixel Bite 反代，不要用临时公网 IP。
 
 重启：`stop_web.sh` 然后 `launch_web.sh all`。
+
+上传 `front.png` / `back.png` 之后跑：
+
+```bash
+bash /home/ubuntu/trellis2/app/scripts/run_multiview.sh texturing
+```
 
 可选 systemd user：把 `ExecStart=` 指到上述 launch 命令；需要 `loginctl enable-linger ubuntu`。
 

@@ -77,8 +77,12 @@ fi
 
 echo "== ComfyUI clone =="
 cd "$TRELLIS2_CACHE"
+# Pin v0.30.2: later tags require comfy-kitchen APIs that need torch>2.6 (list[int] infer_schema / CUDA 13).
 if [[ ! -d comfyui/.git ]]; then
-  git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git comfyui
+  git clone --depth 1 --branch v0.30.2 https://github.com/comfyanonymous/ComfyUI.git comfyui
+else
+  git -C comfyui fetch --depth 1 origin tag v0.30.2 || git -C comfyui fetch --depth 1 origin v0.30.2
+  git -C comfyui checkout -f v0.30.2 || git -C comfyui checkout -f FETCH_HEAD
 fi
 cd comfyui
 if [[ ! -d custom_nodes/ComfyUI-Trellis2/.git ]]; then
@@ -95,6 +99,22 @@ ln -sfn /home/ubuntu/trellis2/app/checkpoints/dinov3-vitl16-pretrain-lvd1689m \
 readlink -f models/facebook/dinov3-vitl16-pretrain-lvd1689m
 test -f models/facebook/dinov3-vitl16-pretrain-lvd1689m/config.json
 ln -sfn "$TRELLIS2_APP/assets/multiview/grace" "$COMFYUI_DIR/input/grace"
+
+echo "== ComfyUI + torch 2.6: kitchen import must not crash =="
+# Latest comfy-kitchen uses list[int] which torch 2.6 infer_schema rejects (ValueError).
+# Do not upgrade PyTorch. Treat kitchen as optional (fp8/fp4 only).
+python - <<'PY'
+from pathlib import Path
+p = Path("/home/ubuntu/trellis2/cache/comfyui/comfy/quant_ops.py")
+t = p.read_text(encoding="utf-8")
+old = 'except ImportError as e:\n    logging.error(f"Failed to import comfy_kitchen'
+new = 'except Exception as e:\n    logging.error(f"Failed to import comfy_kitchen'
+if old not in t:
+    print("quant_ops kitchen except already patched or missing")
+else:
+    p.write_text(t.replace(old, new, 1), encoding="utf-8")
+    print("patched", p, "except Exception for comfy_kitchen")
+PY
 
 echo "== keep trellis2 torch: drop CUDA13 torchaudio if a previous pip pulled it =="
 CONSTRAINT="$TRELLIS2_APP/logs/pip-torch-constraint.txt"
@@ -142,6 +162,16 @@ PY
     echo "WARN: ComfyUI-Trellis2 requirements incomplete"
   "$SKIN_ENV/bin/pip" install -c "$CONSTRAINT" $CU124 -r "$COMFYUI_DIR/custom_nodes/ComfyUI-SkinToken/requirements.txt" || \
     echo "WARN: SkinToken requirements incomplete"
+  # ComfyUI itself runs in trellis2 (flash_attn/o_voxel). Install node-light deps there too.
+  pip install -c "$CONSTRAINT" $CU124 -r "$COMFYUI_DIR/requirements.txt" || true
+  pip install -c "$CONSTRAINT" $CU124 -r "$COMFYUI_DIR/custom_nodes/ComfyUI-Trellis2/requirements.txt" || true
+  pip install -c "$CONSTRAINT" $CU124 -r "$COMFYUI_DIR/custom_nodes/ComfyUI-SkinToken/requirements.txt" || true
+  python - <<'PY'
+import torch, sys
+print("trellis2_torch_after_comfy_pip", torch.__version__, "cuda", torch.version.cuda)
+if "2.6.0" not in torch.__version__:
+    sys.exit("trellis2 PyTorch changed; aborting")
+PY
   "$SKIN_ENV/bin/python" - <<'PY'
 import torch, sys
 print("skintoken_torch_after_pip", torch.__version__, "cuda", torch.version.cuda)
@@ -196,6 +226,24 @@ print("4B_redownload_ok")
 PY
   export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
 fi
+
+echo "== texturing_pipeline.json (small; ImageTo3D from_pretrained does not pull it) =="
+python - <<'PY'
+import os
+from pathlib import Path
+from huggingface_hub import hf_hub_download, try_to_load_from_cache
+need = "texturing_pipeline.json"
+cached = try_to_load_from_cache("microsoft/TRELLIS.2-4B", need)
+if cached:
+    print("texturing_pipeline_cached", cached)
+else:
+    os.environ["HF_HUB_OFFLINE"] = "0"
+    os.environ["TRANSFORMERS_OFFLINE"] = "0"
+    p = hf_hub_download("microsoft/TRELLIS.2-4B", need)
+    print("texturing_pipeline_downloaded", p)
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    os.environ["TRANSFORMERS_OFFLINE"] = "1"
+PY
 
 echo "== symlink HF snapshots into ComfyUI models (no second 4B copy) =="
 python - <<'PY'

@@ -18,23 +18,32 @@ def _patch_cv2_exr() -> None:
     sys.path.insert(0, APP_DIR)
     preview = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "trellis2-preview")
     sys.path.insert(0, os.path.abspath(preview))
-    try:
-        import cv2
-        from hdri_utils import load_exr_rgb
-    except Exception:
+    import cv2
+    from hdri_utils import _load_exr_openexr
+
+    if getattr(cv2, "_trellis2_exr_patched", False):
         return
+
     orig = cv2.imread
+    orig_cvt = cv2.cvtColor
 
     def imread(path, flags=1):
+        # Call OpenEXR directly. load_exr_rgb() tries cv2.imread first and would recurse.
         if str(path).lower().endswith(".exr"):
-            try:
-                rgb, _backend = load_exr_rgb(path)
-                return rgb[..., ::-1].copy()  # BGR for official cvtColor(BGR2RGB)
-            except Exception:
-                pass
+            rgb = _load_exr_openexr(path)
+            print(f"exr_imread {path} shape={getattr(rgb, 'shape', None)}", flush=True)
+            return rgb[..., ::-1].copy()  # BGR for official cvtColor(BGR2RGB)
         return orig(path, flags)
 
+    def cvtColor(src, code, *a, **kw):
+        if src is None:
+            raise ValueError("cv2.cvtColor got None; EXR imread patch did not run")
+        return orig_cvt(src, code, *a, **kw)
+
     cv2.imread = imread
+    cv2.cvtColor = cvtColor
+    cv2._trellis2_exr_patched = True
+    print("cv2_exr_patch_ok", flush=True)
 
 
 def main() -> int:
@@ -51,6 +60,7 @@ def main() -> int:
     _patch_cv2_exr()
 
     import gradio as gr
+    _patch_cv2_exr()  # Gradio/OpenCV import order; keep EXR patch on the live cv2 module
 
     orig_launch = gr.Blocks.launch
 
