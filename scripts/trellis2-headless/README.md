@@ -39,7 +39,7 @@ bash /home/ubuntu/trellis2/app/scripts/stop_web.sh
 
 重启：`stop_web.sh` 然后 `launch_web.sh all`。
 
-上传 `front.png` / `back.png` 之后跑：
+三视图放到 `assets/multiview/grace/`（`front.png` / `back.png` / `side.png`）。不要把白底抠成透明（裙子是白的）。`run_multiview.sh` 会转成不透明 RGBA、复制到 ComfyUI `input/` 根目录，并用 rembg（神经网络抠图，不是按白色色键）预处理。texturing 工作流会把 `side.png` 接到 `left_image`。
 
 ```bash
 bash /home/ubuntu/trellis2/app/scripts/run_multiview.sh texturing
@@ -61,5 +61,7 @@ bash /home/ubuntu/trellis2/app/scripts/run_multiview.sh texturing
 
 - `assets/multiview/grace/front.png`
 - `assets/multiview/grace/back.png`
-- `assets/multiview/grace/side.png`（可选）
+- `assets/multiview/grace/side.png`（接到 texturing 的 `left_image`）
 - 形状 OK 的 mesh：`assets/multiview/grace/mesh_from_singleview.glb`（install 会从最新 `grace_*.glb` 复制，不覆盖已有）
+
+`Trellis2PreProcessImage` 官方实现按 RGBA 读第 4 通道。RGB 设定图会 `IndexError`。`patch_trellis2_nodes.py` 在缺 alpha 时补不透明通道；OOM 以外的错误不会把 resolution 降到 512。

@@ -92,6 +92,9 @@ if [[ ! -d custom_nodes/ComfyUI-SkinToken/.git ]]; then
   git clone --depth 1 https://github.com/Rizzlord/ComfyUI-SkinToken.git custom_nodes/ComfyUI-SkinToken
 fi
 
+echo "== patch Trellis2 PreProcess RGB alpha =="
+python "$TRELLIS2_APP/scripts/patch_trellis2_nodes.py" || echo "WARN: Trellis2 nodes.py RGB patch skipped"
+
 echo "== DINOv3 symlink =="
 mkdir -p models/facebook
 ln -sfn /home/ubuntu/trellis2/app/checkpoints/dinov3-vitl16-pretrain-lvd1689m \
@@ -134,6 +137,19 @@ if not str(v).startswith("2.6"):
 PY
 # Matching cu124 torchaudio so transformers 5 can import DINOv3 without libcudart.so.13.
 python -m pip install -c "$CONSTRAINT" --index-url https://download.pytorch.org/whl/cu124 torchaudio==2.6.0
+echo "== rembg CPU onnxruntime (not onnxruntime-gpu / CUDA 13) =="
+python -m pip install -c "$CONSTRAINT" onnxruntime
+python - <<'PY'
+import torch, sys
+print("trellis2_torch_after_onnxruntime", torch.__version__, "cuda", torch.version.cuda)
+if "2.6.0" not in torch.__version__:
+    sys.exit("trellis2 PyTorch changed after onnxruntime; aborting")
+try:
+    from rembg import remove  # noqa: F401
+    print("rembg_import_ok")
+except Exception as e:
+    print("rembg_import_fail", type(e).__name__, e)
+PY
 python - <<'PY'
 import torch, sys
 print("trellis2_torch", torch.__version__, "cuda", torch.version.cuda)

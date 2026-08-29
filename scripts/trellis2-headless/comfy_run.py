@@ -135,6 +135,30 @@ def wait_history(prompt_id: str, timeout: int = 7200) -> dict:
     raise TimeoutError(f"ComfyUI prompt {prompt_id} timed out after {timeout}s")
 
 
+def extract_error(entry: dict) -> Optional[dict]:
+    status = entry.get("status") or {}
+    messages = status.get("messages") if isinstance(status, dict) else None
+    if not messages:
+        return None
+    for msg in messages:
+        if not (isinstance(msg, (list, tuple)) and msg and msg[0] == "execution_error"):
+            continue
+        data = msg[1] if len(msg) > 1 and isinstance(msg[1], dict) else {}
+        tb = data.get("traceback") or []
+        if isinstance(tb, list):
+            tb_s = "".join(tb)[:3000]
+        else:
+            tb_s = str(tb)[:3000]
+        return {
+            "node_id": data.get("node_id"),
+            "node_type": data.get("node_type"),
+            "exception_type": data.get("exception_type"),
+            "exception_message": (data.get("exception_message") or "").strip()[:2000],
+            "traceback": tb_s,
+        }
+    return None
+
+
 def collect_output_files(entry: dict) -> List[str]:
     out_dir = os.path.join(COMFY, "output")
     files = []
@@ -191,7 +215,18 @@ def submit(workflow_path: str, timeout: int = 7200) -> dict:
     t_submit = time.time()
     hist = wait_history(pid, timeout=timeout)
     status = (hist.get("status") or {}).get("status_str") or hist.get("status")
+    err = extract_error(hist)
     print("status", status, flush=True)
+    if err:
+        print(
+            "execution_error",
+            err.get("node_type"),
+            "node",
+            err.get("node_id"),
+            err.get("exception_type"),
+            err.get("exception_message"),
+            flush=True,
+        )
     files = collect_output_files(hist)
     glbs = [f for f in files if f.lower().endswith(".glb") and os.path.isfile(f)]
     if not glbs:
@@ -206,7 +241,14 @@ def submit(workflow_path: str, timeout: int = 7200) -> dict:
                     found.append(path)
         found.sort(key=os.path.getmtime, reverse=True)
         glbs = found
-    return {"prompt_id": pid, "status": status, "files": files, "glbs": glbs, "history": hist}
+    return {
+        "prompt_id": pid,
+        "status": status,
+        "files": files,
+        "glbs": glbs,
+        "error": err,
+        "history": hist,
+    }
 
 
 def main() -> int:
@@ -216,11 +258,19 @@ def main() -> int:
     parser.add_argument("--json-out")
     args = parser.parse_args()
     result = submit(args.workflow, timeout=args.timeout)
-    slim = {k: result[k] for k in ("prompt_id", "status", "files", "glbs")}
+    slim = {k: result[k] for k in ("prompt_id", "status", "files", "glbs", "error")}
     print(json.dumps(slim, indent=2))
     if args.json_out:
         with open(args.json_out, "w", encoding="utf-8") as f:
             json.dump(slim, f, indent=2)
+    if result.get("error"):
+        err = result["error"]
+        print(
+            f"ComfyUI node {err.get('node_id')} {err.get('node_type')} "
+            f"{err.get('exception_type')}: {err.get('exception_message')}",
+            file=sys.stderr,
+        )
+        return 3
     if not result["glbs"]:
         print("no GLB in ComfyUI outputs; check the workflow export node", file=sys.stderr)
         return 2

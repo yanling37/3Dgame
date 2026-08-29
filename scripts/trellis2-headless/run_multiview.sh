@@ -64,6 +64,20 @@ fi
 source /home/ubuntu/miniconda3/etc/profile.d/conda.sh
 conda activate trellis2
 cd "$TRELLIS2_APP"
+
+python "$SCRIPT_DIR/prepare_views.py"
+
+REMBG_FLAG="--rembg"
+if python -c "from rembg import remove" >/dev/null 2>&1; then
+  echo "rembg_ok"
+else
+  echo "rembg_unavailable; PreProcess will keep RGB sheets (opaque alpha, no white chroma-key)" >&2
+  REMBG_FLAG="--no-rembg"
+fi
+
+# Always restore first-run defaults so a previous OOM retry does not stick at 512.
+python "$SCRIPT_DIR/patch_workflows.py" --resolution 1024 --texture-size 2048 --steps 12 $REMBG_FLAG
+
 STAMP="$(date -u +%Y%m%d_%H%M%S)"
 OUT_DIR="$TRELLIS2_APP/output/multiview"
 mkdir -p "$OUT_DIR" "$TRELLIS2_APP/logs"
@@ -73,14 +87,37 @@ run_once() {
   python "$SCRIPT_DIR/comfy_run.py" "$WF" --json-out "$JSON_OUT"
 }
 
+is_oom() {
+  JSON_OUT="$JSON_OUT" python3 - <<'PY'
+import json, os, sys
+p = os.environ.get("JSON_OUT") or ""
+try:
+    d = json.load(open(p))
+except Exception:
+    raise SystemExit(1)
+err = d.get("error") or {}
+blob = " ".join(str(err.get(k) or "") for k in ("exception_type", "exception_message", "traceback")).lower()
+keys = ("out of memory", "cuda out of memory", "hip out of memory", "cudnn_status_alloc_failed")
+raise SystemExit(0 if any(k in blob for k in keys) else 1)
+PY
+}
+
 set +e
 run_once
 rc=$?
 set -e
 if [[ $rc -ne 0 ]]; then
-  echo "first attempt failed (rc=$rc); retrying resolution=512 if OOM is likely" >&2
-  python "$SCRIPT_DIR/patch_workflows.py" --resolution 512 --texture-size 2048 --steps 12
-  run_once
+  if is_oom; then
+    echo "OOM; retrying resolution=512 texture_size=2048 steps=12" >&2
+    python "$SCRIPT_DIR/patch_workflows.py" --resolution 512 --texture-size 2048 --steps 12 $REMBG_FLAG
+    set +e
+    run_once
+    rc=$?
+    set -e
+  else
+    echo "first attempt failed (rc=$rc); not retrying at 512 (error is not OOM)" >&2
+    exit "$rc"
+  fi
 fi
 
 GLB="$(python3 - << PY
