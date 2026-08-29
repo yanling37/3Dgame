@@ -3,7 +3,8 @@
 运行位置：GPU `ubuntu@18.180.160.51`（只用弹性 IP），代码 `/home/ubuntu/trellis2/app`。
 
 - Gradio `:7860` / `:7861`：conda `trellis2`（PyTorch `2.6.0+cu124`，不要改）
-- ComfyUI `:8188`：conda `skintoken`（Python 3.11，同一套 `2.6.0+cu124`）。SkinToken 的 pip 不能装进 `trellis2`，否则会拉来需要 `libcudart.so.13` 的 `torchaudio`。
+- ComfyUI `:8188`：同样用 conda `trellis2`。`flash_attn` / `o_voxel` / `nvdiffrast` / `flex_gemm` 是给 CPython 3.10 编译的，Python 3.11 的 `skintoken` 环境装不上这些扩展。
+- conda `skintoken`（3.11）仍会创建，并用同一套 `2.6.0+cu124` 跑 SkinToken 的 pip，避免再把需要 `libcudart.so.13` 的 `torchaudio 2.11` 装进 `trellis2`。若 `trellis2` 被污染，脚本会卸掉不匹配的 torchaudio，并可以再装 `torchaudio==2.6.0+cu124`。
 
 本目录脚本会复制到 GPU 的 `$TRELLIS2_APP/scripts/`。
 

@@ -8,14 +8,9 @@ export TRANSFORMERS_OFFLINE="${TRANSFORMERS_OFFLINE:-1}"
 export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
 export OPENCV_IO_ENABLE_OPENEXR="${OPENCV_IO_ENABLE_OPENEXR:-1}"
 export COMFYUI_DIR="${COMFYUI_DIR:-/home/ubuntu/trellis2/cache/comfyui}"
-# ComfyUI+SkinToken use conda env skintoken (3.11). Gradio stays on trellis2.
-if [[ -z "${COMFY_PYTHON:-}" ]]; then
-  if [[ -x /home/ubuntu/miniconda3/envs/skintoken/bin/python ]]; then
-    export COMFY_PYTHON=/home/ubuntu/miniconda3/envs/skintoken/bin/python
-  else
-    export COMFY_PYTHON="$(command -v python || true)"
-  fi
-fi
+# Default ComfyUI to trellis2 (CPython 3.10 + flash_attn/o_voxel). Override with
+# COMFY_PYTHON if a rebuilt skintoken env ever has those extensions.
+export COMFY_PYTHON="${COMFY_PYTHON:-/home/ubuntu/miniconda3/envs/trellis2/bin/python}"
 export SKINTOKEN_FORCE_HEADLESS="${SKINTOKEN_FORCE_HEADLESS:-1}"
 if [[ -n "${SKINTOKEN_BLENDER_BIN:-}" ]]; then
   export SKINTOKEN_BLENDER_BIN

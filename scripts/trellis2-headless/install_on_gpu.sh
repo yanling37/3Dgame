@@ -97,6 +97,9 @@ test -f models/facebook/dinov3-vitl16-pretrain-lvd1689m/config.json
 ln -sfn "$TRELLIS2_APP/assets/multiview/grace" "$COMFYUI_DIR/input/grace"
 
 echo "== keep trellis2 torch: drop CUDA13 torchaudio if a previous pip pulled it =="
+CONSTRAINT="$TRELLIS2_APP/logs/pip-torch-constraint.txt"
+mkdir -p "$TRELLIS2_APP/logs"
+printf '%s\n' "torch==2.6.0" "torchvision==0.21.0" "torchaudio==2.6.0" > "$CONSTRAINT"
 python - <<'PY'
 import importlib.metadata as m, subprocess, sys
 try:
@@ -109,6 +112,8 @@ if not str(v).startswith("2.6"):
     subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", "torchaudio"])
     print("uninstalled_mismatched_torchaudio", v)
 PY
+# Matching cu124 torchaudio so transformers 5 can import DINOv3 without libcudart.so.13.
+python -m pip install -c "$CONSTRAINT" --index-url https://download.pytorch.org/whl/cu124 torchaudio==2.6.0
 python - <<'PY'
 import torch, sys
 print("trellis2_torch", torch.__version__, "cuda", torch.version.cuda)
@@ -118,8 +123,6 @@ PY
 
 echo "== ComfyUI pip into conda env skintoken (Python 3.11); do not touch trellis2 torch =="
 SKIN_ENV="/home/ubuntu/miniconda3/envs/skintoken"
-CONSTRAINT="$TRELLIS2_APP/logs/pip-torch-constraint.txt"
-printf '%s\n' "torch==2.6.0" "torchvision==0.21.0" "torchaudio==2.6.0" > "$CONSTRAINT"
 echo "constraint $(tr '\n' ' ' < "$CONSTRAINT")"
 if [[ "$SKIP_COMFY_PIP" != "1" ]]; then
   if [[ ! -x "$SKIN_ENV/bin/python" ]]; then
