@@ -242,6 +242,34 @@ def _patch_node(
     node["widgets_values"] = wv
 
 
+def _bypass_passthrough_nodes(wf: dict, ntypes: tuple[str, ...]) -> None:
+    """Rewire around mesh pass-through nodes (MeshLib hole-fill OOMs on 17k holes)."""
+    links = wf.get("links") or []
+    drop_nodes: set = set()
+    drop_links: set = set()
+    for node in wf.get("nodes") or []:
+        if node.get("type") not in ntypes:
+            continue
+        nid = node.get("id")
+        mesh_in = next((i for i in (node.get("inputs") or []) if i.get("name") == "mesh"), None)
+        if not mesh_in or mesh_in.get("link") is None:
+            continue
+        src = next((L for L in links if L[0] == mesh_in["link"]), None)
+        if not src:
+            continue
+        src_node, src_slot = src[1], src[2]
+        drop_links.add(src[0])
+        drop_nodes.add(nid)
+        for L in links:
+            if L[1] == nid:
+                L[1] = src_node
+                L[2] = src_slot
+        print("bypassed", node.get("type"), "id", nid, "via", src_node)
+    if drop_nodes:
+        wf["nodes"] = [n for n in wf["nodes"] if n.get("id") not in drop_nodes]
+        wf["links"] = [L for L in links if L[0] not in drop_links]
+
+
 def patch_workflow(
     src: str,
     dst: str,
@@ -261,6 +289,7 @@ def patch_workflow(
         _patch_node(node, prefix, resolution, texture_size, steps, rembg)
     _assign_untitled_image_loaders(out)
     _wire_optional_views(out, resolution, rembg)
+    _bypass_passthrough_nodes(out, ("Trellis2FillHolesNicelyWithMeshlib",))
     os.makedirs(os.path.dirname(dst) or ".", exist_ok=True)
     with open(dst, "w", encoding="utf-8") as f:
         json.dump(out, f, indent=2)
