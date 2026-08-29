@@ -1,0 +1,17 @@
+[Unit]
+Description=TRELLIS.2 Gradio app_texturing.py :7861
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/trellis2/app
+Environment=HF_HOME=/home/ubuntu/trellis2/cache/huggingface
+Environment=HF_HUB_OFFLINE=1
+Environment=TRANSFORMERS_OFFLINE=1
+Environment=PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+ExecStart=/home/ubuntu/miniconda3/envs/trellis2/bin/python /home/ubuntu/trellis2/app/scripts/launch_gradio.py --listen 0.0.0.0 --port 7861 --app app_texturing.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
