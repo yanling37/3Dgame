@@ -194,6 +194,41 @@ PY
   export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
 fi
 
+echo "== symlink HF snapshots into ComfyUI models (no second 4B copy) =="
+python - <<'PY'
+import os, pathlib
+hub = pathlib.Path(os.environ["HF_HOME"]) / "hub"
+comfy = pathlib.Path(os.environ["COMFYUI_DIR"]) / "models"
+mapping = {
+    "models--microsoft--TRELLIS.2-4B": comfy / "microsoft" / "TRELLIS.2-4B",
+    "models--microsoft--TRELLIS-image-large": comfy / "microsoft" / "TRELLIS-image-large",
+    "models--briaai--RMBG-2.0": comfy / "briaai" / "RMBG-2.0",
+}
+for repo, dest in mapping.items():
+    refs = hub / repo / "refs" / "main"
+    snap_dir = hub / repo / "snapshots"
+    if refs.is_file():
+        rev = refs.read_text().strip()
+        src = snap_dir / rev
+    else:
+        snaps = sorted(snap_dir.glob("*")) if snap_dir.is_dir() else []
+        src = snaps[-1] if snaps else None
+    if src is None or not src.is_dir():
+        print("symlink_skip", repo)
+        continue
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if dest.is_symlink() or dest.exists():
+        if dest.is_symlink() and os.path.realpath(dest) == os.path.realpath(src):
+            print("symlink_ok", dest, "->", src)
+            continue
+    dest.unlink(missing_ok=True) if dest.is_symlink() else None
+    if dest.exists():
+        print("symlink_keep_existing_dir", dest)
+        continue
+    os.symlink(src, dest)
+    print("symlink", dest, "->", src)
+PY
+
 if [[ "$SKIP_WEB" != "1" ]]; then
   bash "$TRELLIS2_APP/scripts/launch_web.sh" all || true
 fi
