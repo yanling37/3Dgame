@@ -132,7 +132,11 @@ if [[ -z "$GLB" || ! -f "$GLB" ]]; then
   exit 2
 fi
 DEST="$OUT_DIR/grace_mv_${MODE}_${STAMP}.glb"
-cp -n "$GLB" "$DEST" || cp "$GLB" "$DEST"
+if [[ ! -e "$DEST" ]]; then
+  cp "$GLB" "$DEST"
+else
+  echo "keep existing $DEST"
+fi
 echo "glb_ok $DEST"
 if [[ -x "$TRELLIS2_APP/publish_preview.sh" ]]; then
   bash "$TRELLIS2_APP/publish_preview.sh" "$DEST"

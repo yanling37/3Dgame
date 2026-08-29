@@ -13,7 +13,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ssh_pb() { ssh -i "$KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new "$HOST" "$@"; }
 scp_pb() { scp -i "$KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new "$@"; }
 
-python3 "$SCRIPT_DIR/build_models_json.py" --dir "$APP" --out "$APP/models.json"
+python3 "$SCRIPT_DIR/build_models_json.py" \
+  --dir "$APP" \
+  --dir "$APP/output/multiview" \
+  --dir "$APP/output/rigged" \
+  --dir "$APP/output/projection" \
+  --out "$APP/models.json"
 
 STAGE="$(mktemp -d /tmp/trellis-pub.XXXXXX)"
 mkdir -p "$STAGE/icons"
