@@ -39,10 +39,13 @@ bash /home/ubuntu/trellis2/app/scripts/stop_web.sh
 
 重启：`stop_web.sh` 然后 `launch_web.sh all`。
 
-三视图放到 `assets/multiview/grace/`（`front.png` / `back.png` / `side.png`）。不要把白底抠成透明（裙子是白的）。`run_multiview.sh` 会转成不透明 RGBA、复制到 ComfyUI `input/` 根目录，并用 rembg（神经网络抠图，不是按白色色键）预处理。texturing 工作流会把 `side.png` 接到 `left_image`。
+三视图放到 `assets/multiview/grace/`（`front.png` / `back.png` / `side.png`）。不要把白底抠成透明（裙子是白的）。`run_multiview.sh` 会转成不透明 RGBA、复制到 ComfyUI `input/` 根目录，并用 rembg（神经网络抠图，不是按白色色键）预处理。`side.png` 接到 `left_image`。
+
+- `texturing`：只把新图刷到**已有** `mesh_from_singleview.glb`（外形还是上次的模型）
+- `full`：用三视图**重新生成 mesh**，再贴图
 
 ```bash
-bash /home/ubuntu/trellis2/app/scripts/run_multiview.sh texturing
+bash /home/ubuntu/trellis2/app/scripts/run_multiview.sh full
 ```
 
 可选 systemd user：把 `ExecStart=` 指到上述 launch 命令；需要 `loginctl enable-linger ubuntu`。

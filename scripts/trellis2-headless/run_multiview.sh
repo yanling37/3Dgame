@@ -10,9 +10,9 @@ usage() {
 Usage:
   run_multiview.sh <texturing|full|mesh_only>
 
-texturing : needs front.png + back.png + mesh_from_singleview.glb
-full      : needs front.png + back.png
-mesh_only : needs front.png + back.png
+texturing : reuse existing mesh_from_singleview.glb; only bake new textures
+full      : generate a NEW mesh from the views, then texture it
+mesh_only : generate a NEW mesh only (no texture bake)
 
 Views live in $TRELLIS2_APP/assets/multiview/grace/
 First-run defaults: resolution=1024 texture_size=2048 steps=12
