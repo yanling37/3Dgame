@@ -64,4 +64,4 @@ bash /home/ubuntu/trellis2/app/scripts/run_multiview.sh texturing
 - `assets/multiview/grace/side.png`（接到 texturing 的 `left_image`）
 - 形状 OK 的 mesh：`assets/multiview/grace/mesh_from_singleview.glb`（install 会从最新 `grace_*.glb` 复制，不覆盖已有）
 
-`Trellis2PreProcessImage` 官方实现按 RGBA 读第 4 通道。RGB 设定图会 `IndexError`。`patch_trellis2_nodes.py` 在缺 alpha 时补不透明通道；OOM 以外的错误不会把 resolution 降到 512。
+`Trellis2PreProcessImage` 官方实现按 RGBA 读第 4 通道。RGB 设定图会 `IndexError`。`patch_trellis2_nodes.py` 在缺 alpha 时补不透明通道，并把 ComfyUI-Trellis2 对 `tiled_flexible_dual_grid_to_mesh` 的导入改成可回退（当前 `o_voxel 0.0.1` / torch 2.6 没有该符号，与官方 TRELLIS.2 一致）。OOM 以外的错误不会把 resolution 降到 512。
