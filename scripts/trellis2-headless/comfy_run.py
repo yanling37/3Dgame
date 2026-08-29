@@ -48,6 +48,15 @@ def _is_widget_spec(typ: Any) -> bool:
     return kind in WIDGET_KINDS
 
 
+def _widget_default(typ: Any) -> Any:
+    if isinstance(typ, (list, tuple)) and len(typ) >= 2 and isinstance(typ[1], dict) and "default" in typ[1]:
+        return typ[1]["default"]
+    kind = typ[0] if isinstance(typ, (list, tuple)) else typ
+    if isinstance(kind, (list, tuple)) and kind:
+        return kind[0]
+    return None
+
+
 def ui_to_api(workflow: dict, info: dict) -> Tuple[dict, List[str]]:
     """Convert ComfyUI UI graph to API prompt. Returns (prompt, missing_types)."""
     missing: List[str] = []
@@ -71,6 +80,8 @@ def ui_to_api(workflow: dict, info: dict) -> Tuple[dict, List[str]]:
             continue
         spec = info[ntype]
         widget_names: List[str] = []
+        widget_specs: Dict[str, Any] = {}
+        required_widgets: List[str] = []
         for section in ("required", "optional"):
             items = spec.get("input", {}).get(section) or {}
             if not isinstance(items, dict):
@@ -78,6 +89,9 @@ def ui_to_api(workflow: dict, info: dict) -> Tuple[dict, List[str]]:
             for name, typ in items.items():
                 if _is_widget_spec(typ):
                     widget_names.append(name)
+                    widget_specs[name] = typ
+                    if section == "required":
+                        required_widgets.append(name)
 
         inputs: Dict[str, Any] = {}
         wv = list(node.get("widgets_values") or [])
@@ -116,6 +130,13 @@ def ui_to_api(workflow: dict, info: dict) -> Tuple[dict, List[str]]:
                 continue
             from_node, from_slot = link[1], link[2]
             inputs[name] = [str(from_node), int(from_slot)]
+
+        for name in required_widgets:
+            if name in inputs:
+                continue
+            default = _widget_default(widget_specs.get(name))
+            if default is not None:
+                inputs[name] = default
 
         prompt[nid] = {"class_type": ntype, "inputs": inputs}
     return prompt, missing

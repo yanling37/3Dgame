@@ -11,6 +11,11 @@
    2.6.0+cu124) only has flexible_dual_grid_to_mesh, matching microsoft
    TRELLIS.2. Fall back instead of upgrading o_voxel.
 
+3. ReconstructMeshWithQuad: ComfyUI-Trellis2 calls
+   CuMesh.remeshing.reconstruct_mesh_dc_quad. Frozen cumesh only has
+   remesh_narrow_band_dc. Skip the missing API and keep the decoded mesh
+   instead of upgrading cumesh / torch.
+
 Do not touch /home/ubuntu/trellis2/app official TRELLIS.2 math.
 """
 from __future__ import annotations
@@ -106,10 +111,44 @@ def _patch_fdg(path: str) -> int:
     return 0
 
 
+QUAD_OLD = """        # Perform Dual Contouring remeshing (rebuilds topology)
+        print('Reconstructing mesh ...')
+        vertices, faces = CuMesh.remeshing.reconstruct_mesh_dc_quad(vertices, faces, resolution, verbose=True, remove_inner_faces = remove_inner_faces)
+"""
+QUAD_NEW = """        # PATCH: cumesh-no-dc-quad (frozen cumesh has remesh_narrow_band_dc only)
+        print('Reconstructing mesh ...')
+        if hasattr(CuMesh.remeshing, "reconstruct_mesh_dc_quad"):
+            vertices, faces = CuMesh.remeshing.reconstruct_mesh_dc_quad(
+                vertices, faces, resolution, verbose=True, remove_inner_faces=remove_inner_faces
+            )
+        else:
+            print("skip reconstruct_mesh_dc_quad; using decoded mesh (do not upgrade cumesh)")
+"""
+QUAD_MARKER = "PATCH: cumesh-no-dc-quad"
+
+
+def _patch_reconstruct(path: str) -> int:
+    if not os.path.isfile(path):
+        print("skip: missing", path)
+        return 0
+    text = open(path, encoding="utf-8").read()
+    if QUAD_MARKER in text:
+        print("already_patched reconstruct", path)
+        return 0
+    if QUAD_OLD not in text:
+        print("warn: ReconstructMeshWithQuad blob not found; not patching", path, file=sys.stderr)
+        return 1
+    text = text.replace(QUAD_OLD, QUAD_NEW, 1)
+    open(path, "w", encoding="utf-8").write(text)
+    print("patched reconstruct", path)
+    return 0
+
+
 def main() -> int:
     rc = _patch_preprocess(NODES)
     rc2 = _patch_fdg(FDG)
-    return rc or rc2
+    rc3 = _patch_reconstruct(NODES)
+    return rc or rc2 or rc3
 
 
 if __name__ == "__main__":
