@@ -11,10 +11,8 @@
    2.6.0+cu124) only has flexible_dual_grid_to_mesh, matching microsoft
    TRELLIS.2. Fall back instead of upgrading o_voxel.
 
-3. ReconstructMeshWithQuad: ComfyUI-Trellis2 calls
-   CuMesh.remeshing.reconstruct_mesh_dc_quad. Frozen cumesh only has
-   remesh_narrow_band_dc. Skip the missing API and keep the decoded mesh
-   instead of upgrading cumesh / torch.
+3. ReconstructMeshWithQuad: skip missing reconstruct_mesh_dc_quad.
+4. FillHolesNicelyWithMeshlib: skip when hole count is huge (OOM).
 
 Do not touch /home/ubuntu/trellis2/app official TRELLIS.2 math.
 """
@@ -144,11 +142,46 @@ def _patch_reconstruct(path: str) -> int:
     return 0
 
 
+HOLE_OLD = """        nb_holes = len(hole_edges)
+        print(f"{nb_holes} holes found")
+
+        if nb_holes > 0:
+"""
+HOLE_NEW = """        nb_holes = len(hole_edges)
+        print(f"{nb_holes} holes found")
+        # PATCH: skip-meshlib-many-holes (17k holes OOM-killed ComfyUI on 32G)
+        if nb_holes > 64:
+            print(f"skip FillHolesNicelyWithMeshlib ({nb_holes} holes > 64); passing mesh through")
+            return (mesh_copy, 0)
+
+        if nb_holes > 0:
+"""
+HOLE_MARKER = "PATCH: skip-meshlib-many-holes"
+
+
+def _patch_holefill(path: str) -> int:
+    if not os.path.isfile(path):
+        print("skip: missing", path)
+        return 0
+    text = open(path, encoding="utf-8").read()
+    if HOLE_MARKER in text:
+        print("already_patched holefill", path)
+        return 0
+    if HOLE_OLD not in text:
+        print("warn: FillHolesNicely blob not found; not patching", path, file=sys.stderr)
+        return 1
+    text = text.replace(HOLE_OLD, HOLE_NEW, 1)
+    open(path, "w", encoding="utf-8").write(text)
+    print("patched holefill", path)
+    return 0
+
+
 def main() -> int:
     rc = _patch_preprocess(NODES)
     rc2 = _patch_fdg(FDG)
     rc3 = _patch_reconstruct(NODES)
-    return rc or rc2 or rc3
+    rc4 = _patch_holefill(NODES)
+    return rc or rc2 or rc3 or rc4
 
 
 if __name__ == "__main__":

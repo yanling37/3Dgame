@@ -144,10 +144,15 @@ def ui_to_api(workflow: dict, info: dict) -> Tuple[dict, List[str]]:
 
 def wait_history(prompt_id: str, timeout: int = 7200) -> dict:
     t0 = time.time()
+    consecutive_down = 0
     while time.time() - t0 < timeout:
         try:
             hist = _http_json("GET", f"/history/{prompt_id}", timeout=30)
+            consecutive_down = 0
         except Exception:
+            consecutive_down += 1
+            if consecutive_down >= 5:
+                raise SystemExit(f"ComfyUI {SERVER} went away while waiting for {prompt_id}")
             time.sleep(2)
             continue
         if hist and prompt_id in hist:
