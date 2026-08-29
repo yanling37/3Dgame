@@ -16,7 +16,7 @@ MODE_DEFS = [
     {"key": "shaded_sunset", "name": "HDRI sunset", "icon": "icons/hdri_sunset.png", "suffix": "hdri_sunset", "hdri": True},
     {"key": "shaded_courtyard", "name": "HDRI courtyard", "icon": "icons/hdri_courtyard.png", "suffix": "hdri_courtyard", "hdri": True},
 ]
-STAMP_RE = re.compile(r"_(\d{8}_\d{6})$")
+STAMP_RE = re.compile(r"_(\d{8})_(\d{4,6})$")
 
 
 def _views(prefix: str, suffix: str, search_dirs: List[str], nviews: int = 8) -> List[str]:
@@ -76,7 +76,10 @@ def build(search_dirs: List[str]) -> dict:
 
     def sort_key(m):
         match = STAMP_RE.search(m["id"])
-        return match.group(1) if match else m["id"]
+        if not match:
+            return ("", m["id"])
+        date, tod = match.group(1), match.group(2).ljust(6, "0")
+        return (date + tod, m["id"])
 
     models.sort(key=sort_key, reverse=True)
     return {
