@@ -25,15 +25,8 @@ if [[ ! -f "$WF" ]]; then
   echo "missing $WF" >&2
   exit 2
 fi
-if [[ ! -f "$GRACE/back.png" ]]; then
-  echo "missing $GRACE/back.png (need at least a fixed back view)" >&2
-  exit 1
-fi
-if [[ ! -f "$GRACE/mesh_from_singleview.glb" ]]; then
-  echo "missing $GRACE/mesh_from_singleview.glb" >&2
-  exit 1
-fi
 
+# UUID subgraph (Qwen image pack) is the blocker; report 待 Qwen even before views exist.
 # shellcheck disable=SC1091
 source /home/ubuntu/miniconda3/etc/profile.d/conda.sh
 conda activate trellis2
@@ -51,6 +44,15 @@ if uuids:
     print("Do not download extra Qwen image weights. Status: 待 Qwen")
     sys.exit(2)
 PY
+
+if [[ ! -f "$GRACE/back.png" ]]; then
+  echo "missing $GRACE/back.png (need at least a fixed back view)" >&2
+  exit 1
+fi
+if [[ ! -f "$GRACE/mesh_from_singleview.glb" ]]; then
+  echo "missing $GRACE/mesh_from_singleview.glb" >&2
+  exit 1
+fi
 
 code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8188/ || true)
 if [[ "$code" == "000" ]]; then
