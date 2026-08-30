@@ -1,5 +1,6 @@
 using DivineWorld.Simulation.Core;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace DivineWorld.Simulation.UI
 {
@@ -69,6 +70,10 @@ namespace DivineWorld.Simulation.UI
             DrawTab("观察", HudWindowId.Observer);
             DrawTab("图表", HudWindowId.History);
             DrawTab("政治", HudWindowId.Politics);
+            if (GUILayout.Button("进入降临吧", GUILayout.Width(96f), GUILayout.Height(32f)))
+            {
+                SceneManager.LoadScene("Jianglin");
+            }
             if (_windows.OpenWindow == HudWindowId.None)
             {
                 GUILayout.Label("（当前已全部隐藏，点左边按钮打开）");
