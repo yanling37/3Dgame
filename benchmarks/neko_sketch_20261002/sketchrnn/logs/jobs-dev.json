@@ -1,0 +1,67 @@
+{
+  "chrome": "/usr/local/bin/google-chrome",
+  "backend": "cpu",
+  "offline": true,
+  "cold": false,
+  "out_dir": "/workspace/benchmarks/neko_sketch_20261002/sketchrnn/outputs/dev/round-pf4.0",
+  "jobs": [
+    {
+      "id": "backend",
+      "op": "backend",
+      "backend": "cpu"
+    },
+    {
+      "id": "load-sun",
+      "op": "load",
+      "category": "sun"
+    },
+    {
+      "id": "sun_s17",
+      "op": "generate",
+      "case_id": "DEV-sun",
+      "group": "development",
+      "category": "sun",
+      "seed": 17,
+      "temperature": 0.65,
+      "pixel_factor": 4.0,
+      "max_points": 512,
+      "max_strokes": 32,
+      "timeout_ms": 30000,
+      "stroke_width": 2.5,
+      "sampler": "seeded",
+      "spotcheck": true
+    },
+    {
+      "id": "sun_s29",
+      "op": "generate",
+      "case_id": "DEV-sun",
+      "group": "development",
+      "category": "sun",
+      "seed": 29,
+      "temperature": 0.65,
+      "pixel_factor": 4.0,
+      "max_points": 512,
+      "max_strokes": 32,
+      "timeout_ms": 30000,
+      "stroke_width": 2.5,
+      "sampler": "seeded",
+      "spotcheck": false
+    },
+    {
+      "id": "sun_s43",
+      "op": "generate",
+      "case_id": "DEV-sun",
+      "group": "development",
+      "category": "sun",
+      "seed": 43,
+      "temperature": 0.65,
+      "pixel_factor": 4.0,
+      "max_points": 512,
+      "max_strokes": 32,
+      "timeout_ms": 30000,
+      "stroke_width": 2.5,
+      "sampler": "seeded",
+      "spotcheck": false
+    }
+  ]
+}

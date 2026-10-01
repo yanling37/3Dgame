@@ -1,0 +1,104 @@
+{
+  "route": "flux-schnell",
+  "model": "black-forest-labs/FLUX.1-schnell",
+  "not_used": [
+    "FLUX.1-dev",
+    "FLUX.1-pro"
+  ],
+  "hub_gated": "auto",
+  "environment": {
+    "os": "Linux-6.12.94+-x86_64-with-glibc2.39",
+    "cpu_count": 4,
+    "gpu": null,
+    "hf_token": false
+  },
+  "cuda_probe": [
+    {
+      "attempt": 1,
+      "nvidia_devices": [],
+      "status": "blocked_no_gpu",
+      "seconds": 0.0001769829998465866
+    },
+    {
+      "attempt": 2,
+      "nvidia_devices": [],
+      "status": "blocked_no_gpu",
+      "seconds": 5.230700003266975e-05
+    },
+    {
+      "attempt": 3,
+      "nvidia_devices": [],
+      "status": "blocked_no_gpu",
+      "seconds": 4.302599995753553e-05
+    }
+  ],
+  "weight_head_attempts": [
+    {
+      "attempt": 1,
+      "heads": [
+        {
+          "url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/flux1-schnell.safetensors",
+          "status": 401,
+          "error": "HTTP Error 401: Unauthorized",
+          "seconds": 0.13012120300004426
+        },
+        {
+          "url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/transformer/diffusion_pytorch_model.safetensors.index.json",
+          "status": 401,
+          "error": "HTTP Error 401: Unauthorized",
+          "seconds": 0.1354200050000145
+        }
+      ]
+    },
+    {
+      "attempt": 2,
+      "heads": [
+        {
+          "url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/flux1-schnell.safetensors",
+          "status": 401,
+          "error": "HTTP Error 401: Unauthorized",
+          "seconds": 0.12064304000000448
+        },
+        {
+          "url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/transformer/diffusion_pytorch_model.safetensors.index.json",
+          "status": 401,
+          "error": "HTTP Error 401: Unauthorized",
+          "seconds": 0.120803455999976
+        }
+      ]
+    },
+    {
+      "attempt": 3,
+      "heads": [
+        {
+          "url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/flux1-schnell.safetensors",
+          "status": 401,
+          "error": "HTTP Error 401: Unauthorized",
+          "seconds": 0.12373632500020904
+        },
+        {
+          "url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/transformer/diffusion_pytorch_model.safetensors.index.json",
+          "status": 401,
+          "error": "HTTP Error 401: Unauthorized",
+          "seconds": 0.12145394000003762
+        }
+      ]
+    }
+  ],
+  "diffusers_revision": null,
+  "variants": {
+    "bf16": "not_run",
+    "quantized_or_offload": "not_run"
+  },
+  "samples": {
+    "status": "not_run",
+    "count": 72
+  },
+  "first_stroke_ms": "not_applicable",
+  "stroke_order": "not_applicable",
+  "process_score": "not_applicable",
+  "hand_drawn_score": null,
+  "semantic_score": null,
+  "local_8gb_gpu": "not_tested",
+  "reason": "Weight files return HTTP 401 without a token, the model card marks the repo gated, and this machine has no NVIDIA GPU. No image was generated. CPU offload was not run, so there is no timing to compare with a few-second target."
+}

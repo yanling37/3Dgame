@@ -1,0 +1,6 @@
+[project]
+name = "neko-omnisvg-eval"
+version = "1.0.0"
+description = "OmniSVG blocking diagnosis"
+requires-python = ">=3.11"
+dependencies = []

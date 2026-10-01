@@ -1,0 +1,4 @@
+{"points":[[100,100],[120,80],[140,100],[160,80],[180,100],[200,80],[220,100],[240,80],[260,100],[280,80],[300,100]],"weight":"light","looseness":0.2,"energy":"calm","closed":false}
+{"points":[[100,100],[100,160],[140,140],[180,160],[180,100]],"weight":"light","looseness":0.2,"energy":"calm","closed":false}
+{"points":[[160,100],[160,140],[180,130],[200,140],[200,100]],"weight":"confident","looseness":0.2,"energy":"quick","closed":false}
+{"points":[[240,100],[240,140],[260,130],[280,140],[280,100]],"weight

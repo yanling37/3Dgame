@@ -1,0 +1,20 @@
+OmniSVG 路线报告
+
+结论
+这条路线没有进入采样。云端机器没有 NVIDIA GPU，官方模型卡把 OmniSVG1.1-4B 的推理显存写成约 16GB。按方案要求，资源不够时提交阻塞报告，不用系统内存卸载后再说成 GPU 上几秒跑完。
+
+未测
+- 基础精度 72 条：not_run。没有加载 pytorch_model.bin，也没有跑开发集或正式集。
+- 8GB 量化变体：not_run。没有找到并实际跑通一套支持其自定义 tokenizer / decoder 的量化。不能把权重大小 7.6GB 写成 8GB 通过。
+- 人工手绘感、语义、过程分：null，待人工复核。没有画面。
+- 本机 RTX 5050 约 8GB：未测。
+- 首笔、稳定态 p50/p95、冷启动、播放：null。
+- 后处理逐笔播放：未做，因为没有 SVG 输出。
+
+已核对
+- Hub 模型 OmniSVG/OmniSVG1.1_4B，API 上看到的 sha 前缀 117d4c4541839e029435。没有改用旧的 3B 权重。
+- pytorch_model.bin 的 HEAD 大小约 7694002862 字节。三次无 GPU 检查都是同一阻塞。
+- 模型卡表格写的是 GPU Memory Usage 16G，以及 256/512/1024 token 约 4.08/8.68/18.07 秒。那是官方参考，不是这次机器的成绩。
+
+复现诊断
+uv run python src/diagnose.py

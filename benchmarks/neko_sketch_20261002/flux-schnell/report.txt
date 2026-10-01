@@ -1,0 +1,22 @@
+FLUX.1-schnell 路线报告
+
+结论
+这条路线没有生成图片。黑森林 FLUX.1-schnell 的权重请求返回 401，Hub 上该仓库是 gated。当前环境没有 Hugging Face token，也没有 NVIDIA GPU。没有改用 dev 或 pro，也没有跑 CPU offload 再把“能加载”写成几秒完成。
+
+未测
+- 默认精度 72 条：not_run。没有冻结步数，因为开发集的 1/2/4 步比较没有开始。
+- 量化或 offload 变体：not_run。没有实测显存、RAM 或耗时。
+- text encoder、transformer、VAE 的分阶段时间和整机显存：null。
+- 首笔时间和笔画顺序：not_applicable。这是位图模型，但本次没有位图，所以手绘感和语义分也是 null，不是 0。
+- 过程分：not_applicable。
+- 边缘提取、矢量化、模拟逐笔：未做。
+- 人工评分：待人工复核，没有盲评图。
+- 本机约 8GB GPU：未测。权重小于显存或可以量化的估计都不算通过。
+- Diffusers revision：未安装，未记录一次实际推理。
+
+已核对
+- 模型 id 是 black-forest-labs/FLUX.1-schnell。README 仍给出 guidance_scale=0.0 和 schnell 的 1 到 4 步说明，那是文档，不是这次成绩。
+- 三次 HEAD 都记在 logs/diagnosis.json。同一 401 连续出现后停止，没有反复换下载方案。
+
+复现诊断
+uv run python src/diagnose.py

@@ -1,0 +1,37 @@
+{
+  "route": "qwen-sketchling",
+  "model": "Qwen/Qwen3-4B-Instruct-2507",
+  "formal_variant": "qwen3-4b-nf4-complete",
+  "quantization": {
+    "method": "bitsandbytes",
+    "load_in_4bit": true,
+    "bnb_4bit_quant_type": "nf4",
+    "bnb_4bit_compute_dtype": "bfloat16",
+    "device": "cpu"
+  },
+  "generation": {
+    "do_sample": true,
+    "temperature": 0.7,
+    "top_p": 0.8,
+    "top_k": 20,
+    "max_new_tokens": 1800,
+    "timeout_s": 30
+  },
+  "prompt_rounds": [
+    {
+      "round": 1,
+      "frozen": true,
+      "text": "用无文字、黑色少量笔画的简笔画表达输入意思；输出画布坐标和笔画，不输出解释。每行一个 JSON 笔画，最后一行 {\"done\":true}。坐标 0 到 320。",
+      "dev_result": "DEV01 seed 17 success in 28.2s but the same zigzag was repeated three times. DEV02-DEV06 timed out around 30s with truncated JSON."
+    },
+    {
+      "round": 2,
+      "frozen": false,
+      "text": "Round 1 plus 最多 6 笔，每笔最多 8 个点，不要重复同一笔。",
+      "dev_result": "All six development prompts timed out. Not used for the formal run."
+    }
+  ],
+  "renderer": "plain-svg-coordinates",
+  "sketchling": "not used for the scored previews",
+  "variants_not_run": ["qwen3-4b-bf16-complete", "qwen3-4b-bf16-stream", "qwen3-4b-nf4-stream"]
+}

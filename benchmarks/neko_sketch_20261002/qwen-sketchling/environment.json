@@ -1,0 +1,11 @@
+{
+  "route": "qwen-sketchling",
+  "gpu": null,
+  "torch": "2.14.1+cpu",
+  "transformers": "5.18.0",
+  "bitsandbytes": "0.50.2",
+  "kernels": "0.17.1",
+  "model": "Qwen/Qwen3-4B-Instruct-2507",
+  "quant": "nf4",
+  "final_vm_hwm_kb": 10261024
+}

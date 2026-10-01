@@ -1,0 +1,66 @@
+{
+  "route": "omnisvg",
+  "model": "OmniSVG/OmniSVG1.1_4B",
+  "revision_seen_on_hub_api": "117d4c4541839e029435",
+  "official_gpu_memory": "16G for OmniSVG1.1-4B, from the model card inference table",
+  "official_time_note": "Model card lists about 4.08/8.68/18.07 seconds per 256/512/1024 SVG tokens on that GPU reference, not on this machine.",
+  "weight_file_bytes": 7694002862,
+  "environment": {
+    "os": "Linux-6.12.94+-x86_64-with-glibc2.39",
+    "cpu_count": 4,
+    "gpu": null
+  },
+  "cuda_probe": [
+    {
+      "attempt": 1,
+      "nvidia_devices": [],
+      "nvidia_smi": "command not found",
+      "seconds": 0.0008997940001336246,
+      "status": "blocked_no_gpu"
+    },
+    {
+      "attempt": 2,
+      "nvidia_devices": [],
+      "nvidia_smi": "command not found",
+      "seconds": 0.000815398999975514,
+      "status": "blocked_no_gpu"
+    },
+    {
+      "attempt": 3,
+      "nvidia_devices": [],
+      "nvidia_smi": "command not found",
+      "seconds": 0.000734018000002834,
+      "status": "blocked_no_gpu"
+    }
+  ],
+  "weight_head": [
+    {
+      "attempt": 1,
+      "status": 200,
+      "bytes": "7694002862",
+      "seconds": 0.4800275679999686
+    },
+    {
+      "attempt": 2,
+      "status": 200,
+      "bytes": "7694002862",
+      "seconds": 0.429896226999972
+    },
+    {
+      "attempt": 3,
+      "status": 200,
+      "bytes": "7694002862",
+      "seconds": 0.4499463189999915
+    }
+  ],
+  "quantized_8gb_variant": "not_run",
+  "quantized_8gb_reason": "No quantization that is shown to support this model's custom tokenizer and decoder was run. 8GB is not verified.",
+  "base_variant": "not_run",
+  "base_reason": "No NVIDIA GPU. Official inference memory is about 16GB. Weights were not loaded, and system RAM was not used as an offload path.",
+  "samples": {
+    "status": "not_run",
+    "count": 72
+  },
+  "human_scores": null,
+  "local_8gb_gpu": "not_tested"
+}

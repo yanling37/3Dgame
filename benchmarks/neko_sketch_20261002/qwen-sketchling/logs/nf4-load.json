@@ -1,0 +1,5 @@
+{
+  "load_s": 35.830448157999854,
+  "hwm_kb": 9606672,
+  "quant": "bitsandbytes nf4 cpu"
+}
