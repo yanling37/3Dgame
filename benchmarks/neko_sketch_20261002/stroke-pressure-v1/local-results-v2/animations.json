@@ -1,0 +1,128 @@
+[
+  {
+    "case_id": "T01",
+    "build_ms": 0.5,
+    "first_content_ms": 152,
+    "complete_visible_ms": 1251.300000011921,
+    "actual_playback_ms": 1250.7000000178814,
+    "frames": 74,
+    "max_frame_gap_ms": 16.80000000000109
+  },
+  {
+    "case_id": "T02",
+    "build_ms": 1,
+    "first_content_ms": 46.80000001192093,
+    "complete_visible_ms": 1246.5,
+    "actual_playback_ms": 1245.3999999761581,
+    "frames": 73,
+    "max_frame_gap_ms": 16.80000000000109
+  },
+  {
+    "case_id": "T03",
+    "build_ms": 1.5,
+    "first_content_ms": 46.5,
+    "complete_visible_ms": 1245.199999988079,
+    "actual_playback_ms": 1243.5,
+    "frames": 73,
+    "max_frame_gap_ms": 16.80000000000109
+  },
+  {
+    "case_id": "T04",
+    "build_ms": 1.2999999821186066,
+    "first_content_ms": 102.09999999403954,
+    "complete_visible_ms": 1251.4000000059605,
+    "actual_playback_ms": 1250,
+    "frames": 74,
+    "max_frame_gap_ms": 16.799999999999272
+  },
+  {
+    "case_id": "T05",
+    "build_ms": 1.600000023841858,
+    "first_content_ms": 43.80000001192093,
+    "complete_visible_ms": 1243.2000000178814,
+    "actual_playback_ms": 1241.5,
+    "frames": 73,
+    "max_frame_gap_ms": 16.799999999999272
+  },
+  {
+    "case_id": "T06",
+    "build_ms": 1.7000000178813934,
+    "first_content_ms": 40,
+    "complete_visible_ms": 1239.5,
+    "actual_playback_ms": 1237.5,
+    "frames": 73,
+    "max_frame_gap_ms": 16.799999999999272
+  },
+  {
+    "case_id": "T07",
+    "build_ms": 0,
+    "first_content_ms": 41.5,
+    "complete_visible_ms": 1241.300000011921,
+    "actual_playback_ms": 1241.0999999940395,
+    "frames": 73,
+    "max_frame_gap_ms": 16.799999999999272
+  },
+  {
+    "case_id": "T08",
+    "build_ms": 0,
+    "first_content_ms": 44.099999994039536,
+    "complete_visible_ms": 1243.5999999940395,
+    "actual_playback_ms": 1243.4000000059605,
+    "frames": 73,
+    "max_frame_gap_ms": 16.80000000000291
+  },
+  {
+    "case_id": "T09",
+    "build_ms": 0,
+    "first_content_ms": 37,
+    "complete_visible_ms": 1237.0999999940395,
+    "actual_playback_ms": 1236.8999999761581,
+    "frames": 73,
+    "max_frame_gap_ms": 16.799999999999272
+  },
+  {
+    "case_id": "T10",
+    "build_ms": 0.7000000178813934,
+    "first_content_ms": 159,
+    "complete_visible_ms": 1242.300000011921,
+    "actual_playback_ms": 1241.5,
+    "frames": 73,
+    "max_frame_gap_ms": 16.799999999999272
+  },
+  {
+    "case_id": "C01",
+    "build_ms": 1.4000000059604645,
+    "first_content_ms": 39.599999994039536,
+    "complete_visible_ms": 1239.5999999940395,
+    "actual_playback_ms": 1238.0999999940395,
+    "frames": 73,
+    "max_frame_gap_ms": 16.80000000000291
+  },
+  {
+    "case_id": "C02",
+    "build_ms": 1.5,
+    "first_content_ms": 40.19999998807907,
+    "complete_visible_ms": 1240.199999988079,
+    "actual_playback_ms": 1238.5,
+    "frames": 73,
+    "max_frame_gap_ms": 16.80000000000291
+  },
+  {
+    "case_id": "C03",
+    "build_ms": 1.2999999821186066,
+    "first_content_ms": 45.19999998807907,
+    "complete_visible_ms": 1245.0999999940395,
+    "actual_playback_ms": 1243.5999999940395,
+    "frames": 74,
+    "max_frame_gap_ms": 16.799999999999272
+  },
+  {
+    "case_id": "C04",
+    "build_ms": 1.4000000059604645,
+    "first_content_ms": 47.20000001788139,
+    "complete_visible_ms": 1246,
+    "actual_playback_ms": 1244.3999999761581,
+    "frames": 73,
+    "max_frame_gap_ms": 16.799999999999272
+  }
+]

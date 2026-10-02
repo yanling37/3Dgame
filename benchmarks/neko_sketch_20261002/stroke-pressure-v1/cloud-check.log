@@ -1,0 +1,6 @@
+
+> neko-variable-stroke-bench@1.0.0 check
+> node checks.mjs
+
+{"geometric_cases":14,"finite_outlines":true,"single_stroke_width_variation":true,"density_invariance":true,"closed_seam_width_match":true,"seed_determinism":true,"invalid_input_rejection":true,"real_pressure_samples":0}
+CHECK_EXIT:0

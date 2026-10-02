@@ -1,0 +1,44 @@
+{
+  "route": "sketchrnn",
+  "temperature": 0.65,
+  "pixel_factor": 4.0,
+  "max_points": 512,
+  "max_strokes": 32,
+  "logical_canvas": 320,
+  "preview_canvas": 512,
+  "origin": [
+    160,
+    160
+  ],
+  "stroke_width_px": 2.5,
+  "background": "#ffffff",
+  "stroke": "#000000",
+  "playback_extra_ms": 1500,
+  "timeout_ms": 30000,
+  "seeds": [
+    17,
+    29,
+    43
+  ],
+  "rng": "mulberry32",
+  "gaussian": "box-muller matching @magenta/sketch sketch_support.js",
+  "sampler": "seeded",
+  "primary_variant": "browser-cpu",
+  "weight_url_template": "https://storage.googleapis.com/quickdraw-models/sketchRNN/models/{category}.gen.json",
+  "package": "@magenta/sketch@0.2.0",
+  "adjustments": [
+    {
+      "round": 1,
+      "temperature": 0.65,
+      "pixel_factor": 2.0,
+      "observation": "sun seeds 17/29/43 were recognizable but rays were cropped. outside_point_fraction was 0.417, 0.085 and 0. Seed 17 bbox was about 417 by 367 on a 320 canvas."
+    },
+    {
+      "round": 2,
+      "temperature": 0.65,
+      "pixel_factor": 4.0,
+      "change": "Increase pixelFactor from 2.0 to 4.0. In @magenta/sketch, scaleFactor = checkpoint.scale_factor / pixelFactor, so this shrinks deltas. Temperature stays at the protocol initial value."
+    }
+  ],
+  "notes": "Two development rounds on development prompt 画一个太阳 using the sun checkpoint. Fish has no 512-unit gen.json (HTTP 404) and was not remapped. Temperature was not changed."
+}

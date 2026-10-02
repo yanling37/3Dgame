@@ -1,0 +1,6 @@
+[project]
+name = "neko-sketchrnn-eval"
+version = "1.0.0"
+description = "Reproducible SketchRNN doodle baseline for the 2026-10-02 evaluation"
+requires-python = ">=3.11"
+dependencies = []

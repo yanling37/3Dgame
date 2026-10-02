@@ -1,0 +1,19 @@
+{
+  "name": "neko-variable-stroke-bench",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild browser.js --bundle --format=iife --platform=browser --outfile=preview.js",
+    "check": "node checks.mjs",
+    "bench": "node benchmark.mjs"
+  },
+  "dependencies": {
+    "perfect-freehand": "1.2.3",
+    "sketchling": "0.6.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10",
+    "playwright": "1.58.0"
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "os": "Linux-6.12.94+-x86_64-with-glibc2.39",
+  "os_release": {
+    "PRETTY_NAME": "Ubuntu 24.04.4 LTS",
+    "NAME": "Ubuntu",
+    "VERSION_ID": "24.04",
+    "VERSION": "24.04.4 LTS (Noble Numbat)",
+    "VERSION_CODENAME": "noble",
+    "ID": "ubuntu",
+    "ID_LIKE": "debian",
+    "HOME_URL": "https://www.ubuntu.com/",
+    "SUPPORT_URL": "https://help.ubuntu.com/",
+    "BUG_REPORT_URL": "https://bugs.launchpad.net/ubuntu/",
+    "PRIVACY_POLICY_URL": "https://www.ubuntu.com/legal/terms-and-policies/privacy-policy",
+    "UBUNTU_CODENAME": "noble",
+    "LOGO": "ubuntu-logo"
+  },
+  "cpu": "Intel(R) Xeon(R) Processor",
+  "cpu_count": 4,
+  "meminfo": {
+    "MemTotal": "16398384 kB",
+    "MemAvailable": "10508088 kB",
+    "SwapTotal": "0 kB"
+  },
+  "gpu": null,
+  "gpu_note": "nvidia-smi is not installed and /dev/nvidia* is absent. This machine has no NVIDIA GPU.",
+  "nvidia_smi": "nvidia-smi: command not found",
+  "python": "3.12.3",
+  "node": "v22.14.0",
+  "npm": "10.9.7",
+  "uv": "uv 0.12.21 (x86_64-unknown-linux-gnu)",
+  "chrome": "Google Chrome 148.0.7778.96",
+  "repo_commit": "a5d91fb53026006ae67bfd93525eb062cb637818",
+  "magenta_package": "@magenta/sketch@0.2.0",
+  "puppeteer_core": "23.11.1",
+  "weights": [
+    {
+      "file": "alarm_clock.gen.json",
+      "bytes": 2997388,
+      "sha256": "d70049724c4263a2efd1547f0c85bb3c96b67ee06cbc60dcd55cb328b0e5fda7",
+      "name": "alarm_clock",
+      "version": 6,
+      "max_seq_len": 140,
+      "scale_factor": 83.881,
+      "hidden_units_from_checkpoint_dims": 512
+    },
+    {
+      "file": "book.gen.json",
+      "bytes": 2997382,
+      "sha256": "4c246db4c314f56fd2430a01a2da0977e2052c0acaaf46f8331e9ac621850183",
+      "name": "book",
+      "version": 6,
+      "max_seq_len": 138,
+      "scale_factor": 116.768,
+      "hidden_units_from_checkpoint_dims": 512
+    },
+    {
+      "file": "cat.gen.json",
+      "bytes": 2997378,
+      "sha256": "54d83b0b790323eb758739d7c685f12e1a68740361f35e451a3e0cee1b577ae9",
+      "name": "cat",
+      "version": 6,
+      "max_seq_len": 130,
+      "scale_factor": 82.2,
+      "hidden_units_from_checkpoint_dims": 512
+    },
+    {
+      "file": "dog.gen.json",
+      "bytes": 2997381,
+      "sha256": "911cbbf38bdeea3c2487ec22c2855718862c41fa59312c29072f1805510a004e",
+      "name": "dog",
+      "version": 6,
+      "max_seq_len": 164,
+      "scale_factor": 60.1839,
+      "hidden_units_from_checkpoint_dims": 512
+    },
+    {
+      "file": "flower.gen.json",
+      "bytes": 2997384,
+      "sha256": "8710baafba88517a8318f29679f20221c3984504f1104c31f3271b0360660b45",
+      "name": "flower",
+      "version": 6,
+      "max_seq_len": 124,
+      "scale_factor": 51.4798,
+      "hidden_units_from_checkpoint_dims": 512
+    },
+    {
+      "file": "hand.gen.json",
+      "bytes": 2997382,
+      "sha256": "542a2a9a016ace6ed84ef6e4596ac1765a50b4458ddf0cbd3afd90762ed1209c",
+      "name": "hand",
+      "version": 6,
+      "max_seq_len": 105,
+      "scale_factor": 52.0792,
+      "hidden_units_from_checkpoint_dims": 512
+    },
+    {
+      "file": "rain.gen.json",
+      "bytes": 2997382,
+      "sha256": "f758337e59a835c15a5f4ca1e76b8b129136c2715d877f337cc7798fea51f80f",
+      "name": "rain",
+      "version": 6,
+      "max_seq_len": 124,
+      "scale_factor": 99.9924,
+      "hidden_units_from_checkpoint_dims": 512
+    },
+    {
+      "file": "sun.gen.json",
+      "bytes": 2997375,
+      "sha256": "7f0204b4a339f364a295f40b4f6921b3f4e2484b840746b3060292849b0b6a97",
+      "name": "sun",
+      "version": 6,
+      "max_seq_len": 200,
+      "scale_factor": 70,
+      "hidden_units_from_checkpoint_dims": 512
+    },
+    {
+      "file": "yoga.gen.json",
+      "bytes": 2997378,
+      "sha256": "56af8339e6915c245ad429e15e54ce478a7ce383635a3f0cd61fc34266fe7134",
+      "name": "yoga",
+      "version": 6,
+      "max_seq_len": 99,
+      "scale_factor": 87.6,
+      "hidden_units_from_checkpoint_dims": 512
+    }
+  ],
+  "cases_sha256": "64822666df3e6a19297bcc699b7169aa25ce6e5c24cfec866bd582ebf792fdd0",
+  "frozen_config_sha256": "8dd4019e9141c3e797b6b5060b3ecc257de279da79ecb33ec1371868cc938022"
+}

@@ -1,0 +1,76 @@
+Neko 简笔画四条路线比较
+日期：2026-10-02。此轮不接入 Neko，不改正式配置，也不在云端做最终选型。
+
+推荐进入本机验证的候选
+1. Qwen3-4B 的 4bit 完整输出，以及单独再测的流式变体。它是这次唯一用中文 prompt 跑过全部 24 题的路线。云端 CPU 上 NF4 能加载，但 72 次只有 7 次在 30 秒内合法结束，成功 p95 约 28.5 秒，画出来是方框。本机 RTX 5050 要自己看显存、速度，以及更快解码之后是不是仍然只会画方框。
+2. SketchRNN，只作为单物体轻量笔画组件复核。类别模型覆盖 8/24。浏览器 CPU 上成功请求的完整可见 p95 约 0.42 秒，首笔约 0.03 秒。情绪和场景它不会画。本机要补的是人工观感和裁切能不能接受，不是用云端数字给它排速度名次。
+
+OmniSVG 和 FLUX.1-schnell 这次没有样本，不放进第一轮 8GB 验证。OmniSVG 官方表写约 16GB 显存。FLUX 权重请求三次都是 401，而且它是整图，没有笔画过程。
+
+下面每条都分开写。速度不能跨机器比较。人工分和 8GB 实测都还空着，所以没有一条验收通过。
+
+SketchRNN
+真实设备：云端 Intel Xeon，4 核，约 16GB 内存，无 NVIDIA GPU。浏览器 Google Chrome 148，TensorFlow.js 1.1.2 CPU 后端。WebGL 上下文的渲染器是 SwiftShader 软件光栅，tf.setBackend('webgl') 失败，该变体 72 条 not_run。
+完整样本：browser-cpu 72 条。成功 24，unsupported 48。
+覆盖率：native_supported_cases/24 = 8/24。
+成功率：success/实际尝试 = 24/24，success/72 = 24/72。
+稳定态：完整可见 p50 276 ms，p95 424 ms，最大 445 ms。首笔可见 p95 29 ms。播放结束是完整可见加规定的 1.5 秒，p95 1924 ms。
+首笔：采样循环里第一段墨水经过两次 requestAnimationFrame 后计时，是原生生成顺序，不是事后重排。
+冷启动：三次重开浏览器。浏览器就绪约 245–270 ms，加载 cat 权重约 54–58 ms，生成到可见约 260–301 ms。三段相加约 569–603 ms。冷启动笔画与正式 O01 seed 17 一致。
+峰值资源：无 GPU 显存读数。浏览器 VmHWM 约 190MB。
+人工评分：null，待人工复核。盲评页 blind-review.html。
+8GB 实测：未测。
+成本与外部服务：无在线图片 API。权重来自 storage.googleapis.com 的 512 单元 gen.json，正式推理读本地文件。断网时拦截了 example.com，生成本身没有再访问外网。
+主要失败：13/24 次成功图有超过 5% 的点在 320 画布外。花、雨、瑜伽被裁成残段。雨有两次打到 32 笔上限。猫和狗有重叠，但仍像速写。没有全白图，没有乱码文字。
+输出种类：原生 stroke-5。
+
+Qwen3-4B + 笔画 JSON
+真实设备：同一台无 GPU 的云端机器。PyTorch 2.14.1+cpu，transformers 5.18.0，bitsandbytes 0.50.2，kernels 0.17.1。线性层是 Linear4bit / Params4bit uint8。
+完整样本：只有变体 qwen3-4b-nf4-complete 的 72 条。timeout 63，success 7，invalid_output 2。
+覆盖率：24/24。它读的是中文 prompt，不是类别 id。
+成功率：7/72，实际尝试也是 72。
+稳定态：只对 7 次成功。完整可见 p50 21954 ms，p95 28491 ms，最大 28824 ms。这是完整输出变体，第一眼看到图的时间和完整可见相同。没有单独的首笔分布。
+首笔能力：流式变体 not_run，不能写成首笔提前可见。
+冷启动：未做三次重开。单次加载约 35.8 秒，不计入上面的生成时间。
+峰值资源：进程结束时 VmHWM 10261024 kB，约 9.8GB 系统内存。GPU 显存 null。
+人工评分：null，待人工复核。seed=17 只有 E02 和 S04 有合法图。
+8GB 实测：未测。
+成本与外部服务：权重来自 Hugging Face 上的 Qwen/Qwen3-4B-Instruct-2507，推理在本地。没有调用在线图片 API。
+主要失败：30 秒截断导致 JSON 不完整；完成的图是方框，看不出拥抱、感谢、困或送花；looseness 照抄 0.2；单物体 24 次全部超时。E02 的 seed 17 和 29 文本相同，种子不是每次都生效。
+未测变体：bf16 完整、bf16 流式、NF4 流式，都是 not_run，没有并进 7/72。
+输出种类：模型写出的坐标，再用普通 SVG 预览。不是 SketchRNN 那种原生笔画，也不是 Sketchling 渲染。Sketchling 0.6.0 确有 stroke、loop 和 mountRenderable，这次预览没有调用它。
+
+OmniSVG
+真实设备：同一台无 GPU 机器。没有加载模型。
+完整样本：0。72 条 not_run。
+覆盖率：未测，不能写成 24/24。
+成功率：0 次尝试，success/72 = 0/72，且这不是跑失败，是没有跑。
+稳定态 p50/p95：null。
+首笔：未测。官方路径顺序是否等于落笔顺序，未测。
+冷启动：未测。
+峰值资源：未测。模型卡表格写 OmniSVG1.1-4B 约 16GB GPU 内存，那是文档，不是这次读数。权重文件 HEAD 约 7.69GB。
+人工评分：null。没有盲评图。
+8GB 实测：未验证。没有一套实际跑通的、支持其 tokenizer/decoder 的量化。
+成本与外部服务：未下载 pytorch_model.bin，未做内存卸载。
+主要失败：无 GPU，按方案停止。Hub sha 前缀 117d4c4541839e029435，没有用旧 3B 顶替。
+输出种类：未产生 SVG。
+
+FLUX.1-schnell
+真实设备：同一台无 GPU 机器。没有 Hugging Face token。
+完整样本：0。72 条 not_run。没有用 dev 或 pro。
+覆盖率：未测。
+成功率：没有尝试。
+稳定态 p50/p95：null。没有比较 1/2/4 步，所以没有冻结步数。
+首笔、笔画顺序、过程分：not_applicable。手绘感和语义因为没有图片，是 null，不是 0。
+冷启动：未测。
+峰值资源：未测。没有跑 CPU offload。
+人工评分：null。没有盲评图。
+8GB 实测：未测。
+成本与外部服务：flux1-schnell.safetensors 和 transformer 索引三次 HEAD 都是 HTTP 401。仓库 gated。Diffusers revision 未记录，因为没有推理。
+主要失败：授权和没有 GPU。同一 401 连续三次后停止。
+输出种类：该模型若运行，会是整图位图。这次没有图。
+
+仍空着的结论
+人工评分：四条都待复核。
+约 8GB GPU：四条都未在 RTX 5050 上测过。
+没有任何路线在这次运行里同时满足 24 题、95% 成功、3 秒 p95、人工语义 4/5 和手绘感 3.5/5。这些目标本次都不算通过。

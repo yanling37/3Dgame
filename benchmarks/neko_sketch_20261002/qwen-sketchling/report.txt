@@ -1,0 +1,33 @@
+Qwen3-4B 笔画路线报告
+
+结论
+这次只测了 CPU 上的 bitsandbytes NF4 完整输出。它不是 8GB GPU 成绩，也不能当成完整表达通过。模型接受 24 句中文，所以 native_supported_cases/24 = 24/24，但 72 次里只有 7 次在 30 秒内交出合法笔画。成功样本的完整可见 p50 约 22.0 秒，p95 约 28.5 秒，过不了 3 秒目标。看图之后，这 7 次画的是几个轴对齐方框，表达不出拥抱、感谢、困倦、喝水或送花。
+
+开发调整用了两轮后冻结。第一轮是方案规定的 JSON 笔画格式。开发题“画一个太阳”在 28.2 秒成功，但同一条折线重复了三遍。其余 5 个开发题在 30 秒处被切断。第二轮加上“最多 6 笔、不要重复”，6 题全部超时，所以正式评测退回第一轮提示。
+
+未测
+- qwen3-4b-bf16-complete、qwen3-4b-bf16-stream、qwen3-4b-nf4-stream：not_run。NF4 进程结束时 VmHWM 约 10.0GB 系统内存，没有再开一套全精度或另一组 72 条流式。流式会不会缩短等待，这次没有独立样本。
+- Sketchling 的 sketch.stroke、sketch.loop 和浏览器 mountRenderable：没有用。成功预览是 plain-svg-coordinates，只把校验后的坐标画成折线，没有把 looseness 做成手绘抖动。
+- 人工手绘感、语义、过程分：null。盲评页只有 seed=17 且格式成功的 E02、S04。其余 seed=17 没有合法预览。待人工复核。
+- 冷启动三次：未单列。本次加载约 35.8 秒，写在 logs/nf4-load.json，没有混进生成时间。
+- 本机 RTX 5050 约 8GB：未测。CPU 上 NF4 能加载，不能外推显存和笔记本速度。
+
+计数
+变体 qwen3-4b-nf4-complete。72 条都尝试了。timeout 63，success 7，invalid_output 2。
+success/实际尝试 = 7/72
+success/72 = 7/72
+单物体 8 题 24 次全部 timeout。情绪组 5 次成功、2 次非法输出、17 次超时。场景组 2 次成功、22 次超时。
+成功时间只来自这 7 次，p50 21954 ms，p95 28491 ms，最大 28824 ms。失败没有被算成 0 秒。
+
+画面
+E02“我想抱抱你”的 seed 17 和 29 文本完全一样：两个细方框加一个粗方框。E05“谢谢你”、E07“我有点困了”、S01“喝点水吧”、S04“送你一朵花”也是方框或菱形折线，looseness 都是示例里的 0.2。少量坐标确实把图限制成图标式矩形，看不出人和动作的关系。
+O01 猫在超时前已经写出一串平移的六边形，还没画完。多数失败是 30 秒时 JSON 被截断，少数是点数超过 12 或键不在白名单。没有出现可读文字。没有全白的成功图。
+
+种子
+生成用了模型自己的 do_sample、temperature 0.7、top_p 0.8、top_k 20，并在每次生成前 set_seed。E02 的 17 和 29 结果相同，E05 的 29 和 43 不同。种子不是每次都改变输出。
+
+复现
+cd benchmarks/neko_sketch_20261002/qwen-sketchling
+uv sync
+把 Qwen/Qwen3-4B-Instruct-2507 放到 weights/ 后：
+uv run python src/run_nf4.py formal

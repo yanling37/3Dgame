@@ -1,0 +1,17 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>笔画采集</title>
+<style>body{max-width:720px;margin:24px auto;padding:0 16px;font:16px/1.6 system-ui}canvas{border:1px solid #bbb;max-width:100%;touch-action:none;background:white}button{font:inherit;padding:6px;margin:8px 8px 0 0}</style>
+<h1>可选：采集手画轨迹</h1><p>鼠标会记录真实移动时间，但没有可信笔压；触控笔记录设备报告的 pressure。数据只保存在本页，点击导出才保存文件。</p>
+<canvas id="paper" width="640" height="640"></canvas><p id="info">可以画曲线、圆圈或简单人物。</p><button id="save">导出轨迹 JSON</button><button id="clear">清空</button>
+<script>
+const c=document.getElementById('paper'),ctx=c.getContext('2d');ctx.lineWidth=2;ctx.lineCap='round';const strokes=[];let current=null;
+function point(e){const r=c.getBoundingClientRect();return[(e.clientX-r.left)*320/r.width,(e.clientY-r.top)*320/r.height];}
+function append(e){const p=point(e);if(current.points.length){const old=current.points.at(-1);ctx.beginPath();ctx.moveTo(old[0]*2,old[1]*2);ctx.lineTo(p[0]*2,p[1]*2);ctx.stroke();}
+current.points.push(p);current.time_ms.push(e.timeStamp);current.pressure.push(e.pressure);}
+c.onpointerdown=e=>{if(current)return;e.preventDefault();c.setPointerCapture(e.pointerId);current={points:[],time_ms:[],pressure:[],pointer_id:e.pointerId,pointer_type:e.pointerType,
+ pressure_source:e.pointerType==='pen'?'device-reported pen pressure':'untrusted non-pen pressure',closed:false};append(e);};
+c.onpointermove=e=>{if(!current||e.pointerId!==current.pointer_id)return;for(const p of (e.getCoalescedEvents?.()||[]).length?e.getCoalescedEvents():[e])append(p);};
+function finish(e){if(!current||e.pointerId!==current.pointer_id)return;append(e);current.end_reason=e.type;strokes.push(current);current=null;document.getElementById('info').textContent='已采集 '+strokes.length+' 笔；可导出原始坐标、时间与设备笔压。';}
+c.onpointerup=finish;c.onpointercancel=finish;
+document.getElementById('clear').onclick=()=>{current=null;ctx.clearRect(0,0,640,640);strokes.length=0;document.getElementById('info').textContent='已清空';};
+document.getElementById('save').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({logical_size:320,source:'browser PointerEvent capture; device-reported pressure is not calibrated force',strokes},null,2)],{type:'application/json'}));a.download='my-pen-traces.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+</script></html>

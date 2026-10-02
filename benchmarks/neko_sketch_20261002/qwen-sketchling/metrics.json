@@ -1,0 +1,68 @@
+{
+  "route": "qwen-sketchling",
+  "variant": "qwen3-4b-nf4-complete",
+  "device": "cpu",
+  "quantization": "bitsandbytes NF4",
+  "local_8gb_gpu": "not_tested",
+  "load": {
+    "load_s": 35.830448157999854,
+    "hwm_kb": 9606672,
+    "quant": "bitsandbytes nf4 cpu"
+  },
+  "records": 72,
+  "status": {
+    "timeout": 63,
+    "success": 7,
+    "invalid_output": 2
+  },
+  "native_supported_cases_over_24": "24/24",
+  "success_over_attempts": "7/72",
+  "success_over_72": "7/72",
+  "groups": {
+    "object": {
+      "records": 24,
+      "success": 0,
+      "status": {
+        "timeout": 24
+      }
+    },
+    "emotion": {
+      "records": 24,
+      "success": 5,
+      "status": {
+        "timeout": 17,
+        "success": 5,
+        "invalid_output": 2
+      }
+    },
+    "scene": {
+      "records": 24,
+      "success": 2,
+      "status": {
+        "timeout": 22,
+        "success": 2
+      }
+    }
+  },
+  "steady_success_ms": {
+    "complete_visible": {
+      "p50": 21953.57815599982,
+      "p95": 28491.318520499954,
+      "max": 28824.32812800016,
+      "n": 7
+    }
+  },
+  "scores": {
+    "hand_drawn": null,
+    "semantic": null,
+    "process": null,
+    "status": "pending_human_review"
+  },
+  "variants_not_run": {
+    "qwen3-4b-bf16-complete": "not_run. Peak RSS of the NF4 process was already about 9–10GB. A second full-precision run was not started.",
+    "qwen3-4b-bf16-stream": "not_run",
+    "qwen3-4b-nf4-stream": "not_run. Streaming was not given its own 72 requests. This variant waits for the full text, so first_content equals complete_visible."
+  },
+  "renderer": "plain-svg-coordinates",
+  "sketchling_mount": "not_used"
+}

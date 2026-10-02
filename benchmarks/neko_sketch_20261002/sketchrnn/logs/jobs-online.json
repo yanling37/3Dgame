@@ -1,0 +1,20 @@
+{
+  "chrome": "/usr/local/bin/google-chrome",
+  "backend": "cpu",
+  "offline": false,
+  "cold": false,
+  "out_dir": "/workspace/benchmarks/neko_sketch_20261002/sketchrnn/outputs/online-load",
+  "jobs": [
+    {
+      "id": "backend",
+      "op": "backend",
+      "backend": "cpu"
+    },
+    {
+      "id": "load-remote-cat",
+      "op": "load",
+      "category": "cat",
+      "weight_url": "https://storage.googleapis.com/quickdraw-models/sketchRNN/models/cat.gen.json"
+    }
+  ]
+}

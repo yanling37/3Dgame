@@ -1,0 +1,452 @@
+{
+  "route": "sketchrnn",
+  "clock": "performance.now inside the page for request phases; process.hrtime.bigint for browser launch only",
+  "percentile": "linear interpolation between nearest ranks",
+  "playback_extra_ms": 1500,
+  "playback_note": "Added to complete_visible. Not measured as model time.",
+  "planning_ms": null,
+  "prompt_sent_to_model": false,
+  "download": {
+    "total_seconds": 2.4518897699999798,
+    "files": [
+      {
+        "category": "cat",
+        "url": "https://storage.googleapis.com/quickdraw-models/sketchRNN/models/cat.gen.json",
+        "ok": true,
+        "bytes": 2997378,
+        "seconds": 0.3908995589999904,
+        "sha256": "54d83b0b790323eb758739d7c685f12e1a68740361f35e451a3e0cee1b577ae9"
+      },
+      {
+        "category": "flower",
+        "url": "https://storage.googleapis.com/quickdraw-models/sketchRNN/models/flower.gen.json",
+        "ok": true,
+        "bytes": 2997384,
+        "seconds": 0.10955728099997941,
+        "sha256": "8710baafba88517a8318f29679f20221c3984504f1104c31f3271b0360660b45"
+      },
+      {
+        "category": "hand",
+        "url": "https://storage.googleapis.com/quickdraw-models/sketchRNN/models/hand.gen.json",
+        "ok": true,
+        "bytes": 2997382,
+        "seconds": 0.4424383630000648,
+        "sha256": "542a2a9a016ace6ed84ef6e4596ac1765a50b4458ddf0cbd3afd90762ed1209c"
+      },
+      {
+        "category": "book",
+        "url": "https://storage.googleapis.com/quickdraw-models/sketchRNN/models/book.gen.json",
+        "ok": true,
+        "bytes": 2997382,
+        "seconds": 0.394551945999865,
+        "sha256": "4c246db4c314f56fd2430a01a2da0977e2052c0acaaf46f8331e9ac621850183"
+      },
+      {
+        "category": "rain",
+        "url": "https://storage.googleapis.com/quickdraw-models/sketchRNN/models/rain.gen.json",
+        "ok": true,
+        "bytes": 2997382,
+        "seconds": 0.2624667600000521,
+        "sha256": "f758337e59a835c15a5f4ca1e76b8b129136c2715d877f337cc7798fea51f80f"
+      },
+      {
+        "category": "yoga",
+        "url": "https://storage.googleapis.com/quickdraw-models/sketchRNN/models/yoga.gen.json",
+        "ok": true,
+        "bytes": 2997378,
+        "seconds": 0.26917628599994714,
+        "sha256": "56af8339e6915c245ad429e15e54ce478a7ce383635a3f0cd61fc34266fe7134"
+      },
+      {
+        "category": "dog",
+        "url": "https://storage.googleapis.com/quickdraw-models/sketchRNN/models/dog.gen.json",
+        "ok": true,
+        "bytes": 2997381,
+        "seconds": 0.2583640079999441,
+        "sha256": "911cbbf38bdeea3c2487ec22c2855718862c41fa59312c29072f1805510a004e"
+      },
+      {
+        "category": "alarm_clock",
+        "url": "https://storage.googleapis.com/quickdraw-models/sketchRNN/models/alarm_clock.gen.json",
+        "ok": true,
+        "bytes": 2997388,
+        "seconds": 0.22170655599984457,
+        "sha256": "d70049724c4263a2efd1547f0c85bb3c96b67ee06cbc60dcd55cb328b0e5fda7"
+      }
+    ],
+    "fish_small_model": {
+      "category": "fish",
+      "url": "https://storage.googleapis.com/quickdraw-models/sketchRNN/models/fish.gen.json",
+      "ok": false,
+      "error": "HTTP Error 404: Not Found",
+      "seconds": 0.08421003700004803
+    },
+    "note": "Timed re-download into logs/redownload. Formal inference reads weights/ and does not use this copy."
+  },
+  "first_model_load_ms": 60.699999999953434,
+  "model_loads": [
+    {
+      "id": "load-cat",
+      "load_ms": 60.699999999953434,
+      "num_units": 512,
+      "cached": false
+    },
+    {
+      "id": "load-flower",
+      "load_ms": 57.60000000009313,
+      "num_units": 512,
+      "cached": false
+    },
+    {
+      "id": "load-hand",
+      "load_ms": 54.199999999953434,
+      "num_units": 512,
+      "cached": false
+    },
+    {
+      "id": "load-book",
+      "load_ms": 51,
+      "num_units": 512,
+      "cached": false
+    },
+    {
+      "id": "load-rain",
+      "load_ms": 55.60000000009313,
+      "num_units": 512,
+      "cached": false
+    },
+    {
+      "id": "load-yoga",
+      "load_ms": 44.699999999953434,
+      "num_units": 512,
+      "cached": false
+    },
+    {
+      "id": "load-dog",
+      "load_ms": 47.60000000009313,
+      "num_units": 512,
+      "cached": false
+    },
+    {
+      "id": "load-alarm_clock",
+      "load_ms": 44.800000000046566,
+      "num_units": 512,
+      "cached": false
+    }
+  ],
+  "warmup_complete_visible_ms": [
+    241.10000000009313,
+    359.69999999995343,
+    243.80000000004657
+  ],
+  "seed_repeat_match": true,
+  "parity_match": true,
+  "cold_starts": [
+    {
+      "id": "cold_0_O01_s17",
+      "browser_ready_ms": 254.946038,
+      "model_load_ms": 53.800000000046566,
+      "status": "success",
+      "complete_visible_ms": 260.29999999981374,
+      "cold_total_ms": 569.0460379998603,
+      "blocked_during_generate": [],
+      "clock_note": "Sum of browser-ready (node monotonic, launch through page load), model initialize (performance.now), and generate-to-visible (performance.now). Segments are not subtracted across clocks."
+    },
+    {
+      "id": "cold_1_O01_s17",
+      "browser_ready_ms": 269.972846,
+      "model_load_ms": 53.39999999990687,
+      "status": "success",
+      "complete_visible_ms": 277.0999999998603,
+      "cold_total_ms": 600.4728459997672,
+      "blocked_during_generate": [],
+      "clock_note": "Sum of browser-ready (node monotonic, launch through page load), model initialize (performance.now), and generate-to-visible (performance.now). Segments are not subtracted across clocks."
+    },
+    {
+      "id": "cold_2_O01_s17",
+      "browser_ready_ms": 244.572693,
+      "model_load_ms": 58,
+      "status": "success",
+      "complete_visible_ms": 300.69999999995343,
+      "cold_total_ms": 603.2726929999534,
+      "blocked_during_generate": [],
+      "clock_note": "Sum of browser-ready (node monotonic, launch through page load), model initialize (performance.now), and generate-to-visible (performance.now). Segments are not subtracted across clocks."
+    }
+  ],
+  "online_remote_load": [
+    {
+      "id": "backend",
+      "op": "backend",
+      "ok": true,
+      "backend": "cpu",
+      "browser_launch_ms": 140.117406,
+      "blocked": [],
+      "page_errors": []
+    },
+    {
+      "id": "load-remote-cat",
+      "op": "load",
+      "ok": true,
+      "category": "cat",
+      "cached": false,
+      "load_ms": 247.4000000001397,
+      "num_units": 512,
+      "info": {
+        "mode": 2,
+        "version": 6,
+        "max_seq_len": 130,
+        "name": "cat",
+        "scale_factor": 82.2
+      },
+      "sigma_y_length": 43,
+      "scale_factor_at_default_pixel": 41.1,
+      "browser_launch_ms": 140.117406,
+      "blocked": [],
+      "page_errors": []
+    }
+  ],
+  "online_remote_error": null,
+  "webgl_error": "not_run: TensorFlow.js 1.1.2 setBackend('webgl') failed with 'WebGL is not supported on this device'. A WebGL context does exist, but its unmasked renderer is SwiftShader (software). This is not a GPU backend and it was not used for scored samples.",
+  "blocked_url_sample": [],
+  "resources": {
+    "gpu_memory_mb": null,
+    "gpu_note": "no NVIDIA device; CUDA allocated is not applicable",
+    "browser_vm_hwm_kb": 190440,
+    "browser_vm_rss_kb": 187820,
+    "node_vm_hwm_kb": 112312
+  },
+  "variants": {
+    "browser-cpu": {
+      "records": 72,
+      "status": {
+        "success": 24,
+        "unsupported": 48
+      },
+      "native_supported_cases": 8,
+      "native_supported_cases_over_24": "8/24",
+      "success_over_attempts": "24/24",
+      "success_over_72": "24/72",
+      "attempts": 24,
+      "groups": {
+        "object": {
+          "records": 24,
+          "success": 24,
+          "status": {
+            "success": 24
+          },
+          "complete_visible_ms": {
+            "p50": 275.85000000009313,
+            "p95": 423.8800000000395,
+            "max": 444.69999999995343
+          }
+        },
+        "emotion": {
+          "records": 24,
+          "success": 0,
+          "status": {
+            "unsupported": 24
+          },
+          "complete_visible_ms": {
+            "p50": null,
+            "p95": null,
+            "max": null
+          }
+        },
+        "scene": {
+          "records": 24,
+          "success": 0,
+          "status": {
+            "unsupported": 24
+          },
+          "complete_visible_ms": {
+            "p50": null,
+            "p95": null,
+            "max": null
+          }
+        }
+      },
+      "steady_success_ms": {
+        "complete_visible": {
+          "p50": 275.85000000009313,
+          "p95": 423.8800000000395,
+          "max": 444.69999999995343,
+          "n": 24
+        },
+        "first_content": {
+          "p50": 28.099999999976717,
+          "p95": 29.199999999953434,
+          "max": 29.199999999953434,
+          "n": 24
+        },
+        "playback_end": {
+          "p50": 1775.8500000000931,
+          "p95": 1923.8800000000397,
+          "max": 1944.6999999999534,
+          "n": 24
+        },
+        "model_generate": {
+          "p50": 239.75000000011642,
+          "p95": 384.04499999994874,
+          "max": 403.29999999981374
+        }
+      }
+    }
+  },
+  "scores": {
+    "hand_drawn": null,
+    "semantic": null,
+    "process": null,
+    "status": "pending_human_review"
+  },
+  "local_8gb_gpu": "not_tested",
+  "offline_probe": {
+    "formal_generation_blocked_urls": [],
+    "active_fetch_of_example_com": [
+      {
+        "id": "ping_0",
+        "ping": {
+          "ok": false,
+          "error": "TypeError: Failed to fetch"
+        },
+        "blocked": [
+          "https://example.com/"
+        ],
+        "browser_ready_ms": 270.34352
+      },
+      {
+        "id": "ping_1",
+        "ping": {
+          "ok": false,
+          "error": "TypeError: Failed to fetch"
+        },
+        "blocked": [
+          "https://example.com/"
+        ],
+        "browser_ready_ms": 248.882284
+      },
+      {
+        "id": "ping_2",
+        "ping": {
+          "ok": false,
+          "error": "TypeError: Failed to fetch"
+        },
+        "blocked": [
+          "https://example.com/"
+        ],
+        "browser_ready_ms": 244.289501
+      }
+    ],
+    "note": "Formal runs set request interception. Generation sessions made no non-local request. A separate fetch of https://example.com/ was aborted."
+  },
+  "cold_matches_formal_o01_s17": true,
+  "cropping": {
+    "successes": 24,
+    "outside_fraction_gt_0_05": 13,
+    "cases": [
+      {
+        "case_id": "O02",
+        "seed": 17,
+        "category": "flower",
+        "outside_point_fraction": 0.7052631578947368,
+        "hit_stroke_limit": false,
+        "saw_pen_end": true
+      },
+      {
+        "case_id": "O02",
+        "seed": 29,
+        "category": "flower",
+        "outside_point_fraction": 0.7195121951219512,
+        "hit_stroke_limit": false,
+        "saw_pen_end": true
+      },
+      {
+        "case_id": "O03",
+        "seed": 17,
+        "category": "hand",
+        "outside_point_fraction": 0.20987654320987653,
+        "hit_stroke_limit": false,
+        "saw_pen_end": true
+      },
+      {
+        "case_id": "O03",
+        "seed": 29,
+        "category": "hand",
+        "outside_point_fraction": 0.5714285714285714,
+        "hit_stroke_limit": false,
+        "saw_pen_end": true
+      },
+      {
+        "case_id": "O03",
+        "seed": 43,
+        "category": "hand",
+        "outside_point_fraction": 0.4430379746835443,
+        "hit_stroke_limit": false,
+        "saw_pen_end": true
+      },
+      {
+        "case_id": "O04",
+        "seed": 17,
+        "category": "book",
+        "outside_point_fraction": 0.225,
+        "hit_stroke_limit": false,
+        "saw_pen_end": true
+      },
+      {
+        "case_id": "O04",
+        "seed": 29,
+        "category": "book",
+        "outside_point_fraction": 0.07608695652173914,
+        "hit_stroke_limit": false,
+        "saw_pen_end": true
+      },
+      {
+        "case_id": "O05",
+        "seed": 17,
+        "category": "rain",
+        "outside_point_fraction": 0.8389261744966443,
+        "hit_stroke_limit": true,
+        "saw_pen_end": false
+      },
+      {
+        "case_id": "O05",
+        "seed": 29,
+        "category": "rain",
+        "outside_point_fraction": 0.8942307692307693,
+        "hit_stroke_limit": false,
+        "saw_pen_end": true
+      },
+      {
+        "case_id": "O05",
+        "seed": 43,
+        "category": "rain",
+        "outside_point_fraction": 0.75,
+        "hit_stroke_limit": true,
+        "saw_pen_end": false
+      },
+      {
+        "case_id": "O06",
+        "seed": 17,
+        "category": "yoga",
+        "outside_point_fraction": 0.4,
+        "hit_stroke_limit": false,
+        "saw_pen_end": true
+      },
+      {
+        "case_id": "O06",
+        "seed": 43,
+        "category": "yoga",
+        "outside_point_fraction": 0.5394736842105263,
+        "hit_stroke_limit": false,
+        "saw_pen_end": true
+      },
+      {
+        "case_id": "O07",
+        "seed": 17,
+        "category": "dog",
+        "outside_point_fraction": 0.06206896551724138,
+        "hit_stroke_limit": false,
+        "saw_pen_end": true
+      }
+    ]
+  }
+}

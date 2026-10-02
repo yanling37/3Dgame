@@ -1,0 +1,23 @@
+{
+  "chrome": "/usr/local/bin/google-chrome",
+  "backend": "cpu",
+  "offline": true,
+  "cold": false,
+  "out_dir": "/workspace/benchmarks/neko_sketch_20261002/sketchrnn/outputs/probe",
+  "jobs": [
+    {
+      "id": "probe",
+      "op": "probe"
+    },
+    {
+      "id": "backend-cpu",
+      "op": "backend",
+      "backend": "cpu"
+    },
+    {
+      "id": "load-cat",
+      "op": "load",
+      "category": "cat"
+    }
+  ]
+}

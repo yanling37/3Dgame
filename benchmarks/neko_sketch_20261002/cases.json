@@ -1,0 +1,174 @@
+{
+  "version": "1.0",
+  "created_at": "2026-10-02",
+  "purpose": "Neko 几秒内以手绘简笔画表达意思的选型测评",
+  "seeds": [
+    17,
+    29,
+    43
+  ],
+  "input_policy": "生成端只读取 prompt。SketchRNN 单物体基线额外允许读取 sketch_rnn_category。reference、group、id 只供评测记录和判读，不注入模型。",
+  "development_prompts": [
+    "画一个太阳。",
+    "用一幅简笔画表达：我想吃早餐。",
+    "用一幅简笔画表达：祝你生日快乐。",
+    "画一条鱼。",
+    "用一幅简笔画表达：我有点紧张。",
+    "用一幅简笔画表达：一起看看星星吧。"
+  ],
+  "cases": [
+    {
+      "id": "O01",
+      "group": "object",
+      "prompt": "画一只猫。",
+      "sketch_rnn_category": "cat",
+      "reference": "猫的轮廓或主要特征可辨认。"
+    },
+    {
+      "id": "O02",
+      "group": "object",
+      "prompt": "画一朵花。",
+      "sketch_rnn_category": "flower",
+      "reference": "花朵可辨认。"
+    },
+    {
+      "id": "O03",
+      "group": "object",
+      "prompt": "画一只手。",
+      "sketch_rnn_category": "hand",
+      "reference": "手的主要特征可辨认。"
+    },
+    {
+      "id": "O04",
+      "group": "object",
+      "prompt": "画一本书。",
+      "sketch_rnn_category": "book",
+      "reference": "书可辨认。"
+    },
+    {
+      "id": "O05",
+      "group": "object",
+      "prompt": "画下雨。",
+      "sketch_rnn_category": "rain",
+      "reference": "降雨的意象可辨认。"
+    },
+    {
+      "id": "O06",
+      "group": "object",
+      "prompt": "画一个做瑜伽的人。",
+      "sketch_rnn_category": "yoga",
+      "reference": "人物姿势体现瑜伽或伸展。"
+    },
+    {
+      "id": "O07",
+      "group": "object",
+      "prompt": "画一只狗。",
+      "sketch_rnn_category": "dog",
+      "reference": "狗可辨认。"
+    },
+    {
+      "id": "O08",
+      "group": "object",
+      "prompt": "画一个闹钟。",
+      "sketch_rnn_category": "alarm_clock",
+      "reference": "闹钟可辨认。"
+    },
+    {
+      "id": "E01",
+      "group": "emotion",
+      "prompt": "用一幅简笔画表达：我见到你很开心。",
+      "reference": "正向情绪和欢迎或见面之意；等价表达均可。"
+    },
+    {
+      "id": "E02",
+      "group": "emotion",
+      "prompt": "用一幅简笔画表达：我想抱抱你。",
+      "reference": "拥抱、靠近或递出拥抱的动作；单独爱心不足以完整表达。"
+    },
+    {
+      "id": "E03",
+      "group": "emotion",
+      "prompt": "用一幅简笔画表达：别难过，我陪着你。",
+      "reference": "安慰和陪伴关系；等价表达均可。"
+    },
+    {
+      "id": "E04",
+      "group": "emotion",
+      "prompt": "用一幅简笔画表达：我有点孤单。",
+      "reference": "孤独或缺少陪伴的意象。"
+    },
+    {
+      "id": "E05",
+      "group": "emotion",
+      "prompt": "用一幅简笔画表达：谢谢你。",
+      "reference": "感谢的姿态或赠予动作；等价表达均可。"
+    },
+    {
+      "id": "E06",
+      "group": "emotion",
+      "prompt": "用一幅简笔画表达：对不起，我做错了。",
+      "reference": "歉意或认错的姿态；等价表达均可。"
+    },
+    {
+      "id": "E07",
+      "group": "emotion",
+      "prompt": "用一幅简笔画表达：我有点困了。",
+      "reference": "困倦、打哈欠、准备睡觉等意象。"
+    },
+    {
+      "id": "E08",
+      "group": "emotion",
+      "prompt": "用一幅简笔画表达：我好期待。",
+      "reference": "期待、盼望或兴奋等待的意象。"
+    },
+    {
+      "id": "S01",
+      "group": "scene",
+      "prompt": "用一幅简笔画表达：喝点水吧。",
+      "reference": "饮水或递水的意图；饮具和行为或指向关系。"
+    },
+    {
+      "id": "S02",
+      "group": "scene",
+      "prompt": "用一幅简笔画表达：工作久了，起来伸展一下。",
+      "reference": "工作情境与起身伸展或离开工作位置的关系。"
+    },
+    {
+      "id": "S03",
+      "group": "scene",
+      "prompt": "用一幅简笔画表达：我们一起出去散步吧。",
+      "reference": "共同出行或散步的意图。"
+    },
+    {
+      "id": "S04",
+      "group": "scene",
+      "prompt": "用一幅简笔画表达：你辛苦了，送你一朵花。",
+      "reference": "花和赠予或关怀关系。"
+    },
+    {
+      "id": "S05",
+      "group": "scene",
+      "prompt": "用一幅简笔画表达：我在等你回来。",
+      "reference": "等待与回来或团聚的关系。"
+    },
+    {
+      "id": "S06",
+      "group": "scene",
+      "prompt": "用一幅简笔画表达：我想和你一起听音乐。",
+      "reference": "音乐与共同参与的意图。"
+    },
+    {
+      "id": "S07",
+      "group": "scene",
+      "prompt": "用一幅简笔画表达：外面下雨了，出门记得带伞。",
+      "reference": "雨与遮雨、伞或出门准备的关系。"
+    },
+    {
+      "id": "S08",
+      "group": "scene",
+      "prompt": "用一幅简笔画表达：晚安，做个好梦。",
+      "reference": "夜晚或睡眠意象，以及温柔祝愿。"
+    }
+  ]
+}
+

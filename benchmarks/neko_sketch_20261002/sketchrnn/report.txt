@@ -1,0 +1,141 @@
+SketchRNN 路线报告
+
+结论
+SketchRNN 可以当作轻量单物体涂鸦组件来验证，不能当作完整情绪表达通过。
+O01–O08 使用官方 512 隐单元类别权重，浏览器 TensorFlow.js 1.1.2 的 CPU 后端，24/24 次采样都写出了可见笔画。稳定态完整可见 p95 约 424 ms，首笔可见 p95 约 29 ms，播放结束 p95 约 1924 ms。这些数字只描述这台没有 NVIDIA GPU 的云端机器。
+E01–E08 与 S01–S08 没有 sketch_rnn_category。提示词和 reference 没有送进模型，也没有用手写图案或外部语言模型补齐，48 条记为 unsupported。覆盖率是 native_supported_cases/24 = 8/24，success/72 = 24/72。
+人工手绘感、语义和过程分都是 null，状态为待人工复核。约 8GB 的 RTX 5050 本次未测，状态为待本机验证。不宣布验收通过。
+
+这次实际看到的画面
+开发集第 1 轮 temperature=0.65、pixelFactor=2.0，太阳被裁出画布。第 2 轮只把 pixelFactor 调到 4.0（@magenta/sketch 里 scaleFactor = checkpoint.scale_factor / pixelFactor），温度保持 0.65，然后冻结。鱼没有 512 单元权重，fish.gen.json 返回 HTTP 404，没有改用别的类别。
+seed=17 的正式预览：猫和狗能看出是侧面速写；闹钟大体可辨；书是打开的书，但有一部分点在画布外。花、雨、瑜伽在 320 画布里只剩下被切断的片段，雨有两次还打到 32 笔上限并且没有 pen-end。13/24 次成功采样里，画布外的点超过 5%。成功状态只表示有墨水、坐标有限，不表示构图完整。
+观察到的失败类型：裁切、笔画重叠、主体跑出画布、断成无法辨认的残段、以及雨和一次闹钟触达 32 笔上限。没有出现全白图，也没有可读文字或乱码。线条没有粗细变化。猫和狗更像 Quick, Draw 速写，而不是整齐图标。
+
+指标
+变体 browser-cpu。记录 72 条。状态 {'success': 24, 'unsupported': 48}。
+native_supported_cases/24 = 8/24
+success/实际尝试 = 24/24
+success/72 = 24/72
+稳定态只统计 24 条已成功、权重已在页面内的请求。百分位是相邻秩的线性插值。
+{
+  "complete_visible": {
+    "p50": 275.85000000009313,
+    "p95": 423.8800000000395,
+    "max": 444.69999999995343,
+    "n": 24
+  },
+  "first_content": {
+    "p50": 28.099999999976717,
+    "p95": 29.199999999953434,
+    "max": 29.199999999953434,
+    "n": 24
+  },
+  "playback_end": {
+    "p50": 1775.8500000000931,
+    "p95": 1923.8800000000397,
+    "max": 1944.6999999999534,
+    "n": 24
+  },
+  "model_generate": {
+    "p50": 239.75000000011642,
+    "p95": 384.04499999994874,
+    "max": 403.29999999981374
+  }
+}
+分组：
+{
+  "object": {
+    "records": 24,
+    "success": 24,
+    "status": {
+      "success": 24
+    },
+    "complete_visible_ms": {
+      "p50": 275.85000000009313,
+      "p95": 423.8800000000395,
+      "max": 444.69999999995343
+    }
+  },
+  "emotion": {
+    "records": 24,
+    "success": 0,
+    "status": {
+      "unsupported": 24
+    },
+    "complete_visible_ms": {
+      "p50": null,
+      "p95": null,
+      "max": null
+    }
+  },
+  "scene": {
+    "records": 24,
+    "success": 0,
+    "status": {
+      "unsupported": 24
+    },
+    "complete_visible_ms": {
+      "p50": null,
+      "p95": null,
+      "max": null
+    }
+  }
+}
+八个类别首次加载：[{"id": "load-cat", "load_ms": 60.699999999953434, "num_units": 512, "cached": false}, {"id": "load-flower", "load_ms": 57.60000000009313, "num_units": 512, "cached": false}, {"id": "load-hand", "load_ms": 54.199999999953434, "num_units": 512, "cached": false}, {"id": "load-book", "load_ms": 51, "num_units": 512, "cached": false}, {"id": "load-rain", "load_ms": 55.60000000009313, "num_units": 512, "cached": false}, {"id": "load-yoga", "load_ms": 44.699999999953434, "num_units": 512, "cached": false}, {"id": "load-dog", "load_ms": 47.60000000009313, "num_units": 512, "cached": false}, {"id": "load-alarm_clock", "load_ms": 44.800000000046566, "num_units": 512, "cached": false}]
+预热 3 次猫的完整可见时间 ms：[241.10000000009313, 359.69999999995343, 243.80000000004657]
+同一进程内 seed 17 重采样与正式 O01 一致：True。官方 model.sample 与本次 seeded 采样器一致：True。冷启动重开浏览器后的笔画与正式 O01 seed 17 一致：True。
+冷启动是三段相加，不是把浏览器时钟和服务器时钟相减：
+[
+  {
+    "id": "cold_0_O01_s17",
+    "browser_ready_ms": 254.946038,
+    "model_load_ms": 53.800000000046566,
+    "status": "success",
+    "complete_visible_ms": 260.29999999981374,
+    "cold_total_ms": 569.0460379998603,
+    "blocked_during_generate": [],
+    "clock_note": "Sum of browser-ready (node monotonic, launch through page load), model initialize (performance.now), and generate-to-visible (performance.now). Segments are not subtracted across clocks."
+  },
+  {
+    "id": "cold_1_O01_s17",
+    "browser_ready_ms": 269.972846,
+    "model_load_ms": 53.39999999990687,
+    "status": "success",
+    "complete_visible_ms": 277.0999999998603,
+    "cold_total_ms": 600.4728459997672,
+    "blocked_during_generate": [],
+    "clock_note": "Sum of browser-ready (node monotonic, launch through page load), model initialize (performance.now), and generate-to-visible (performance.now). Segments are not subtracted across clocks."
+  },
+  {
+    "id": "cold_2_O01_s17",
+    "browser_ready_ms": 244.572693,
+    "model_load_ms": 58,
+    "status": "success",
+    "complete_visible_ms": 300.69999999995343,
+    "cold_total_ms": 603.2726929999534,
+    "blocked_during_generate": [],
+    "clock_note": "Sum of browser-ready (node monotonic, launch through page load), model initialize (performance.now), and generate-to-visible (performance.now). Segments are not subtracted across clocks."
+  }
+]
+
+后端
+正式变体是 browser-cpu。TensorFlow.js setBackend('webgl') 失败，错误是 WebGL is not supported on this device。页面里仍能创建 WebGL 上下文，unmasked renderer 为 ANGLE SwiftShader，这是软件光栅，不是 GPU。browser-webgl 的 72 条都是 not_run，没有拿 CPU 结果冒充 WebGL。
+离线：正式采样期间拦截非本机请求，生成请求本身的拦截列表为空，说明没有再去拉权重。另外三次主动 fetch https://example.com/ 均被拦截。见 metrics.json 的 offline_probe。
+联网下载 8 个正式权重共 2.4518897699999798 秒。远程加载 cat.gen.json 成功，load_ms 见 online_remote_load。
+
+资源
+{"gpu_memory_mb": null, "gpu_note": "no NVIDIA device; CUDA allocated is not applicable", "browser_vm_hwm_kb": 190440, "browser_vm_rss_kb": 187820, "node_vm_hwm_kb": 112312}
+GPU 显存：未测，机器上没有 NVIDIA 设备。浏览器 VmHWM 约 190MB 量级，不能外推到 8GB 笔记本 GPU。
+
+主观评分
+hand_drawn = null，semantic = null，process = null。盲评页 blind-review.html 先给图、再给原句，页面标题不含方法名。回放页 outputs/browser-cpu/playback.html 按原生采样顺序在 1.5 秒内逐笔画出。待人工复核。没有让 SketchRNN 自评，也没有用 CLIP 分数下语义结论。
+
+本机 8GB
+未测。
+
+复现
+cd benchmarks/neko_sketch_20261002/sketchrnn
+npm ci
+uv run python src/eval_sketchrnn.py all
+依赖锁：package-lock.json、uv.lock。权重在 weights/，清单和 sha256 在 environment.json。
+

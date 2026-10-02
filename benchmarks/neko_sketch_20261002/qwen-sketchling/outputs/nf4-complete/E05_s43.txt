@@ -1,0 +1,4 @@
+{"points":[[100,100],[150,100],[150,120],[100,120],[100,100]],"weight":"light","looseness":0.2,"energy":"calm","closed":false}
+{"points":[[200,100],[250,100],[250,120],[200,120],[200,100]],"weight":"light","looseness":0.2,"energy":"calm","closed":false}
+{"points":[[125,200],[140,180],[160,180],[145,200],[125,200]],"weight":"bold","looseness":0.2,"energy":"quick","closed":false}
+{"done":true}

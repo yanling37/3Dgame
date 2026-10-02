@@ -1,0 +1,22 @@
+[project]
+name = "neko-qwen-sketchling"
+version = "1.0.0"
+description = "Qwen3-4B stroke evaluation. Does not modify Neko."
+requires-python = ">=3.11"
+dependencies = [
+  "torch",
+  "transformers>=4.51.0",
+  "accelerate>=1.0.0",
+  "safetensors",
+  "huggingface-hub",
+  "bitsandbytes>=0.50.2",
+  "kernels>=0.11.1",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

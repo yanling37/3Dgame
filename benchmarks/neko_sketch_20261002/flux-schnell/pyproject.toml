@@ -1,0 +1,6 @@
+[project]
+name = "neko-flux-eval"
+version = "1.0.0"
+description = "FLUX.1-schnell blocking diagnosis"
+requires-python = ">=3.11"
+dependencies = []
