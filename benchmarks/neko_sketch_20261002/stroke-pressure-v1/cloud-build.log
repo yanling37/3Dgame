@@ -1,0 +1,9 @@
+
+> neko-variable-stroke-bench@1.0.0 build
+> esbuild browser.js --bundle --format=iife --platform=browser --outfile=preview.js
+
+
+  preview.js  1.6mb ⚠️
+
+⚡ Done in 78ms
+BUILD_EXIT:0

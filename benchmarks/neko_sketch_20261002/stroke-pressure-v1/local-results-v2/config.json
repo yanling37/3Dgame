@@ -1,0 +1,23 @@
+{
+  "modes": [
+    "constant",
+    "sketchling",
+    "pfh-auto",
+    "pressure-arc"
+  ],
+  "sizes": [
+    320,
+    640
+  ],
+  "seeds": [
+    17,
+    29,
+    43
+  ],
+  "base_width_logical_px": 3,
+  "playback_ms": 1200,
+  "input_policy": "identical frozen XY/pen order; no case-specific geometry replacement",
+  "synthetic_pressure": true,
+  "manual_scores": null,
+  "quick": false
+}

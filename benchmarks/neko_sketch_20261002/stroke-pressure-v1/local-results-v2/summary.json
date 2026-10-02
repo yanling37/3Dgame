@@ -1,0 +1,116 @@
+{
+  "scope": "rendering only, no language model or semantic benchmark",
+  "static_requests": 336,
+  "brush_variants": [
+    {
+      "mode": "constant",
+      "size": 320,
+      "requests": 42,
+      "success": 42,
+      "blank": 0,
+      "error": 0,
+      "build_p50_ms": 0.9000000059604645,
+      "build_p95_ms": 2,
+      "visible_p95_ms": 27.80000001192093,
+      "border_touching_images": 0
+    },
+    {
+      "mode": "sketchling",
+      "size": 320,
+      "requests": 42,
+      "success": 39,
+      "blank": 3,
+      "error": 0,
+      "build_p50_ms": 3.0999999940395355,
+      "build_p95_ms": 11.099999994039536,
+      "visible_p95_ms": 41.599999994039536,
+      "border_touching_images": 0
+    },
+    {
+      "mode": "pfh-auto",
+      "size": 320,
+      "requests": 42,
+      "success": 42,
+      "blank": 0,
+      "error": 0,
+      "build_p50_ms": 0.20000001788139343,
+      "build_p95_ms": 0.800000011920929,
+      "visible_p95_ms": 28.30000001192093,
+      "border_touching_images": 0
+    },
+    {
+      "mode": "pressure-arc",
+      "size": 320,
+      "requests": 42,
+      "success": 42,
+      "blank": 0,
+      "error": 0,
+      "build_p50_ms": 1.0999999940395355,
+      "build_p95_ms": 2.0999999940395355,
+      "visible_p95_ms": 28.200000017881393,
+      "border_touching_images": 0
+    },
+    {
+      "mode": "constant",
+      "size": 640,
+      "requests": 42,
+      "success": 42,
+      "blank": 0,
+      "error": 0,
+      "build_p50_ms": 1,
+      "build_p95_ms": 1.7000000178813934,
+      "visible_p95_ms": 27.400000005960464,
+      "border_touching_images": 0
+    },
+    {
+      "mode": "sketchling",
+      "size": 640,
+      "requests": 42,
+      "success": 39,
+      "blank": 3,
+      "error": 0,
+      "build_p50_ms": 2.399999976158142,
+      "build_p95_ms": 9.800000011920929,
+      "visible_p95_ms": 37.599999994039536,
+      "border_touching_images": 0
+    },
+    {
+      "mode": "pfh-auto",
+      "size": 640,
+      "requests": 42,
+      "success": 42,
+      "blank": 0,
+      "error": 0,
+      "build_p50_ms": 0.19999998807907104,
+      "build_p95_ms": 0.7999999821186066,
+      "visible_p95_ms": 23.099999994039536,
+      "border_touching_images": 0
+    },
+    {
+      "mode": "pressure-arc",
+      "size": 640,
+      "requests": 42,
+      "success": 42,
+      "blank": 0,
+      "error": 0,
+      "build_p50_ms": 1,
+      "build_p95_ms": 1.9000000059604645,
+      "visible_p95_ms": 22.80000001192093,
+      "border_touching_images": 0
+    }
+  ],
+  "animation_requests": 14,
+  "animation_first_p95_ms": 159,
+  "animation_complete_p95_ms": 1251.4000000059605,
+  "animation_frame_gap_p95_ms": 16.80000000000291,
+  "retained_ink_failures": [
+    "T02",
+    "T03",
+    "T06",
+    "C04"
+  ],
+  "strong_ink_loss_cases": [],
+  "retention_policy": "raw loss uses gray 128; diagnostic strong loss uses before<96 after>160; raw failures are retained",
+  "svg_export_mismatch_cases": [],
+  "manual_scores": null
+}

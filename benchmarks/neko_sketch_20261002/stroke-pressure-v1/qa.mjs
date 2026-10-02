@@ -1,0 +1,52 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import {chromium} from 'playwright';
+import {serve,ROOT} from './server.mjs';
+const out=path.join(ROOT,'qa');fs.mkdirSync(out,{recursive:true});
+const {server,url}=await serve();let browser;const errors=[];
+try{
+  browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1024,height:900}});
+  page.on('pageerror',e=>errors.push(String(e)));
+  await page.goto(url);await page.waitForFunction(()=>window.uiReady);
+  await page.waitForFunction(()=>!document.getElementById('case').disabled);
+  assert.equal(await page.locator('#case option').count(),14);
+  assert.equal(await page.locator('#mode option').count(),4);
+  await page.selectOption('#case','C01');await page.waitForFunction(()=>!document.getElementById('case').disabled);
+  await page.screenshot({path:path.join(out,'preview.png'),fullPage:true});
+  const downloadPromise=page.waitForEvent('download');await page.click('#download');const download=await downloadPromise;
+  await download.saveAs(path.join(out,'export.svg'));const exported=fs.readFileSync(path.join(out,'export.svg'),'utf8');
+  assert(exported.startsWith('<svg xmlns=')&&exported.includes('<path'));
+  await page.waitForFunction(()=>!document.getElementById('case').disabled);
+  await page.click('#replay');await page.waitForFunction(()=>document.getElementById('case').disabled);
+  await page.waitForFunction(()=>!document.getElementById('case').disabled);
+  await page.selectOption('#mode','constant');await page.waitForFunction(()=>!document.getElementById('case').disabled);
+  assert(await page.locator('#replay').isDisabled());
+  await page.selectOption('#mode','pressure-arc');await page.waitForFunction(()=>!document.getElementById('case').disabled);
+  await page.locator('#width').fill('4');await page.waitForFunction(()=>!document.getElementById('case').disabled);
+  assert((await page.locator('#summary').innerText()).includes('设计宽度'));
+  await page.setViewportSize({width:375,height:820});await page.screenshot({path:path.join(out,'mobile.png'),fullPage:true});
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
+  await page.goto(url+'capture.html');const rect=await page.locator('#paper').boundingBox();
+  await page.mouse.move(rect.x+30,rect.y+100);await page.mouse.down();
+  await page.mouse.move(rect.x+160,rect.y+80,{steps:16});await page.mouse.up();
+  const capturePromise=page.waitForEvent('download');await page.click('#save');const capture=await capturePromise;
+  await capture.saveAs(path.join(out,'automated-mouse-qa.json'));
+  const trace=JSON.parse(fs.readFileSync(path.join(out,'automated-mouse-qa.json'),'utf8')).strokes[0];
+  assert(trace.points.length>2&&trace.points.length===trace.time_ms.length&&trace.time_ms.length===trace.pressure.length);
+  assert.equal(trace.pointer_type,'mouse');assert.equal(trace.pressure_source,'untrusted non-pen pressure');
+  assert(trace.time_ms.every((t,i,a)=>i===0||t>=a[i-1]));
+  await page.click('#clear');assert.equal(await page.locator('#info').innerText(),'已清空');
+  await page.goto(url+'blind-review.html');await page.waitForFunction(()=>window.blindReady);
+  assert.equal(await page.locator('#cards img').count(),4);
+  assert.equal((await page.locator('#cards .name').allTextContents()).join(','),'A,B,C,D');
+  const ratingsPromise=page.waitForEvent('download');await page.click('#export');const ratings=await ratingsPromise;
+  await ratings.saveAs(path.join(out,'unrated-qa.json'));
+  const unrated=JSON.parse(fs.readFileSync(path.join(out,'unrated-qa.json'),'utf8'));
+  assert.equal(unrated.rows.length,56);assert(unrated.rows.every(r=>r.pressure_natural===null&&r.turn_finish_natural===null&&r.handdrawn===null));
+  assert.deepEqual(errors,[]);
+  const result={ui_loaded:true,selectable_cases:14,brush_variants:4,svg_export:true,replay_controls_locked:true,
+    mobile_no_horizontal_overflow:true,mouse_capture_structure:true,mouse_pressure_untrusted:true,
+    automated_mouse_trace_is_not_human_data:true,blind_review_hidden_variants:true,unrated_scores_remain_null:true,page_errors:errors};
+  fs.writeFileSync(path.join(out,'summary.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
+}finally{if(browser)await browser.close();await new Promise(r=>server.close(r));}

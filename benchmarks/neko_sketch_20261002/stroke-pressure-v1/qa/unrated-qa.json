@@ -1,0 +1,400 @@
+{
+  "results_directory": "local-results-v2",
+  "seed": 17,
+  "size": 320,
+  "source": "user-entered browser ratings; unfilled values remain null",
+  "rows": [
+    {
+      "case_id": "T01",
+      "mode": "constant",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T01",
+      "mode": "sketchling",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T01",
+      "mode": "pfh-auto",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T01",
+      "mode": "pressure-arc",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T02",
+      "mode": "constant",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T02",
+      "mode": "sketchling",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T02",
+      "mode": "pfh-auto",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T02",
+      "mode": "pressure-arc",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T03",
+      "mode": "constant",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T03",
+      "mode": "sketchling",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T03",
+      "mode": "pfh-auto",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T03",
+      "mode": "pressure-arc",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T04",
+      "mode": "constant",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T04",
+      "mode": "sketchling",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T04",
+      "mode": "pfh-auto",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T04",
+      "mode": "pressure-arc",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T05",
+      "mode": "constant",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T05",
+      "mode": "sketchling",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T05",
+      "mode": "pfh-auto",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T05",
+      "mode": "pressure-arc",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T06",
+      "mode": "constant",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T06",
+      "mode": "sketchling",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T06",
+      "mode": "pfh-auto",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T06",
+      "mode": "pressure-arc",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T07",
+      "mode": "constant",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T07",
+      "mode": "sketchling",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T07",
+      "mode": "pfh-auto",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T07",
+      "mode": "pressure-arc",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T08",
+      "mode": "constant",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T08",
+      "mode": "sketchling",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T08",
+      "mode": "pfh-auto",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T08",
+      "mode": "pressure-arc",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T09",
+      "mode": "constant",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T09",
+      "mode": "sketchling",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T09",
+      "mode": "pfh-auto",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T09",
+      "mode": "pressure-arc",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T10",
+      "mode": "constant",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T10",
+      "mode": "sketchling",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T10",
+      "mode": "pfh-auto",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "T10",
+      "mode": "pressure-arc",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C01",
+      "mode": "constant",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C01",
+      "mode": "sketchling",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C01",
+      "mode": "pfh-auto",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C01",
+      "mode": "pressure-arc",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C02",
+      "mode": "constant",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C02",
+      "mode": "sketchling",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C02",
+      "mode": "pfh-auto",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C02",
+      "mode": "pressure-arc",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C03",
+      "mode": "constant",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C03",
+      "mode": "sketchling",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C03",
+      "mode": "pfh-auto",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C03",
+      "mode": "pressure-arc",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C04",
+      "mode": "constant",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C04",
+      "mode": "sketchling",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C04",
+      "mode": "pfh-auto",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    },
+    {
+      "case_id": "C04",
+      "mode": "pressure-arc",
+      "pressure_natural": null,
+      "turn_finish_natural": null,
+      "handdrawn": null
+    }
+  ]
+}

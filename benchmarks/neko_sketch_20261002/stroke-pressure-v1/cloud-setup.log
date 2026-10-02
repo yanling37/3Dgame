@@ -1,0 +1,10 @@
+npm ci --no-audit --no-fund
+exit 0
+npx playwright install --with-deps chromium
+exit 0
+npm run check
+exit 0
+npm run build
+exit 0
+node benchmark.mjs --out cloud-results
+exit 0

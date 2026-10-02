@@ -1,0 +1,11 @@
+{
+  "result_directory": "local-results-v2",
+  "input_sha256": "c20955a737f177c5dc502cbba074c3099e0660d1f689c7253763e8cb1df0f9e9",
+  "source_files": {
+    "brush.js": "9867faeb13fd22c699f7c862a03bd635cb266f279dfd6068f2e43eef6aa672ec",
+    "browser.js": "edcf070de9bf72d0aed5955233c0d679c82cc52e9987f057d6da4194136d7b5e",
+    "preview.js": "12cad8808629e819e0ffcd9dbf88f49a26e93cbba1364e9a45c8e1d8a0f09489",
+    "cases.json": "c20955a737f177c5dc502cbba074c3099e0660d1f689c7253763e8cb1df0f9e9",
+    "package-lock.json": "1fe3715622cbad5995050173ce08f7efb895a6002c19a5e8e2dfb2d178a228b5"
+  }
+}

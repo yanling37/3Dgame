@@ -1,0 +1,14 @@
+{
+  "ui_loaded": true,
+  "selectable_cases": 14,
+  "brush_variants": 4,
+  "svg_export": true,
+  "replay_controls_locked": true,
+  "mobile_no_horizontal_overflow": true,
+  "mouse_capture_structure": true,
+  "mouse_pressure_untrusted": true,
+  "automated_mouse_trace_is_not_human_data": true,
+  "blind_review_hidden_variants": true,
+  "unrated_scores_remain_null": true,
+  "page_errors": []
+}

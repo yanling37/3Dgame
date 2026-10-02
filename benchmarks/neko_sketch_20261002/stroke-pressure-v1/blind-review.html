@@ -1,0 +1,29 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>单笔粗细盲评</title>
+<style>body{max-width:1400px;margin:24px auto;padding:0 16px;font:16px/1.6 system-ui}h1{font-size:24px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}article{border:1px solid #ddd;padding:12px}img{width:100%;max-width:320px;display:block}select,button{font:inherit;padding:4px}label{display:block;margin:4px 0}.top label{display:inline-block;margin-right:16px}.name{font-weight:600}.muted{color:#666}</style>
+<h1>单笔粗细：先看图，再揭晓版本</h1><p>同一图形的四种笔触，版本顺序按题打散。请根据自己的观感评分；未选择的项保存为 null。这里是静态图盲评，动画另在预览页检查。</p>
+<p id="source"></p><div class="top"><label>图形 <select id="case"></select></label><button id="reveal">揭晓本题版本</button> <button id="export">导出我的评分</button></div><div id="cards" class="grid"></div><p id="status" class="muted"></p>
+<script>
+(async()=>{
+ const dir=new URL(location.href).searchParams.get('results')||'local-results-v2';if(!/^[a-z0-9-]+$/.test(dir))throw new Error('无效结果目录');
+ const data=await fetch('cases.json').then(r=>r.json());
+ const modes=['constant','sketchling','pfh-auto','pressure-arc'],labels={'constant':'等宽','sketchling':'Sketchling','pfh-auto':'距离模拟压力','pressure-arc':'沿程压力曲线'};
+ const metrics=[['pressure_natural','落笔轻重自然'],['turn_finish_natural','转弯/收笔自然'],['handdrawn','整体手绘感']];
+ const key='neko-brush-human-review-v1:'+dir;let scores={};try{scores=JSON.parse(localStorage.getItem(key)||'{}');}catch{}
+ document.getElementById('source').textContent='结果目录：'+dir+'；seed17；320×320。';
+ const select=document.getElementById('case');data.cases.forEach(c=>select.add(new Option(c.title,c.id)));select.value='T02';
+ function order(id){let n=[...id].reduce((a,c)=>a*31+c.charCodeAt(0),17)>>>0;const result=[...modes];for(let i=3;i>0;i--){n=(Math.imul(n,1664525)+1013904223)>>>0;const j=n%(i+1);[result[i],result[j]]=[result[j],result[i]];}return result;}
+ function save(){localStorage.setItem(key,JSON.stringify(scores));document.getElementById('status').textContent='仅保存在此浏览器；点击导出可保存文件。';}
+ function render(){const id=select.value;document.getElementById('cards').replaceChildren();order(id).forEach((mode,i)=>{
+   const record=id+':'+mode;scores[record]??={pressure_natural:null,turn_finish_natural:null,handdrawn:null};
+   const article=document.createElement('article'),name=document.createElement('div');name.className='name';name.textContent=String.fromCharCode(65+i);name.dataset.mode=mode;article.append(name);
+   const img=document.createElement('img');img.src=dir+'/png/'+id+'_'+mode+'_s17_320.png';img.alt='笔触样本 '+name.textContent;img.onerror=()=>{article.append('图像未生成；不可为缺失图自动打零分。');};article.append(img);
+   metrics.forEach(([metric,label])=>{const l=document.createElement('label'),s=document.createElement('select');l.append(label+' ');s.add(new Option('未评分',''));
+     for(let j=1;j<=5;j++)s.add(new Option(j+' / 5',String(j)));s.value=scores[record][metric]??'';s.onchange=()=>{scores[record][metric]=s.value?Number(s.value):null;scores[record].input_source='user-entered rating';save();};l.append(s);article.append(l);});
+   document.getElementById('cards').append(article);
+ });}
+ select.onchange=render;document.getElementById('reveal').onclick=()=>document.querySelectorAll('.name').forEach(e=>{e.textContent+=' · '+labels[e.dataset.mode];scores[select.value+':'+e.dataset.mode].variant_revealed=true;save();});
+ document.getElementById('export').onclick=()=>{const rows=data.cases.flatMap(c=>modes.map(mode=>({case_id:c.id,mode,...(scores[c.id+':'+mode]||Object.fromEntries(metrics.map(([m])=>[m,null])))})));
+   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({results_directory:dir,seed:17,size:320,source:'user-entered browser ratings; unfilled values remain null',rows},null,2)],{type:'application/json'}));a.download='human-brush-ratings.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+ render();window.blindReady=true;
+})().catch(e=>{document.getElementById('status').textContent=e.message;});
+</script></html>

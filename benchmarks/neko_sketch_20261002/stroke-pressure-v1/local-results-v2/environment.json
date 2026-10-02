@@ -1,0 +1,20 @@
+{
+  "time_utc": "2026-10-02T10:48:34.493Z",
+  "node": "v24.17.0",
+  "os": "win32",
+  "release": "10.0.26200",
+  "arch": "x64",
+  "cpu": "AMD Ryzen 7 H 260 w/ Radeon 780M Graphics       ",
+  "logical_cores": 16,
+  "system_ram_bytes": 16385794048,
+  "package_versions": {
+    "perfect-freehand": "1.2.3",
+    "sketchling": "0.6.0"
+  },
+  "input_sha256": "c20955a737f177c5dc502cbba074c3099e0660d1f689c7253763e8cb1df0f9e9",
+  "gpu_required": false,
+  "model_inference": false,
+  "real_sensor_pressure_samples": 0,
+  "browser_peak_memory_bytes": null,
+  "browser": "145.0.7632.6"
+}
